@@ -5,9 +5,141 @@
     <meta charset="UTF-8">
     <title>{% block title %}Sistema de Filmes e Séries{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --cinema-red: #e50914;
+            --cinema-red-dark: #b0060f;
+            --cinema-purple: #6a1b9a;
+            --cinema-purple-dark: #4a0f6e;
+            --cinema-bg: #120014;
+            --cinema-bg-2: #1a0a20;
+            --cinema-card: #201028;
+            --cinema-text: #f2eaf5;
+            --cinema-text-muted: #b9a8c4;
+        }
+
+        * {
+            font-family: 'Poppins', sans-serif;
+        }
+
+        body {
+            background: radial-gradient(circle at top, var(--cinema-bg-2) 0%, var(--cinema-bg) 70%);
+            color: var(--cinema-text);
+            min-height: 100vh;
+        }
+
+        /* Navbar */
+        .navbar {
+            background: linear-gradient(90deg, var(--cinema-red-dark) 0%, var(--cinema-purple-dark) 100%) !important;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+        }
+
+        .navbar-brand {
+            font-weight: 700;
+            font-size: 1.4rem;
+            letter-spacing: 0.5px;
+            text-shadow: 0 2px 6px rgba(0,0,0,0.4);
+        }
+
+        .navbar .nav-link {
+            color: rgba(255, 255, 255, 0.85) !important;
+            font-weight: 500;
+            transition: color 0.2s ease;
+        }
+
+        .navbar .nav-link:hover {
+            color: #ffffff !important;
+            text-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+        }
+
+        /* Headings */
+        h1, h2 {
+            font-weight: 600;
+            color: #ffffff;
+        }
+
+        h2 {
+            border-left: 5px solid var(--cinema-red);
+            padding-left: 12px;
+            margin-bottom: 1.5rem !important;
+        }
+
+        h1 {
+            background: linear-gradient(90deg, var(--cinema-red), var(--cinema-purple));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+
+        /* Tables */
+        .table {
+            background-color: var(--cinema-card);
+            color: var(--cinema-text);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+        }
+
+        .table thead.table-dark {
+            background: linear-gradient(90deg, var(--cinema-red-dark), var(--cinema-purple-dark));
+        }
+
+        .table thead th {
+            border: none;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+            text-transform: uppercase;
+            font-size: 0.8rem;
+            padding: 14px 12px;
+        }
+
+        .table-striped > tbody > tr:nth-of-type(odd) > * {
+            background-color: rgba(255, 255, 255, 0.03);
+            color: var(--cinema-text);
+        }
+
+        .table-striped > tbody > tr:nth-of-type(even) > * {
+            background-color: transparent;
+            color: var(--cinema-text);
+        }
+
+        .table td, .table th {
+            border-color: rgba(255, 255, 255, 0.08);
+            vertical-align: middle;
+        }
+
+        .table tbody tr {
+            transition: background-color 0.15s ease;
+        }
+
+        .table tbody tr:hover td {
+            background-color: rgba(229, 9, 20, 0.12);
+        }
+
+        .table a {
+            color: #ff6b81;
+            font-weight: 500;
+            text-decoration: none;
+        }
+
+        .table a:hover {
+            color: #ff9aa8;
+            text-decoration: underline;
+        }
+
+        /* Container / page feel */
+        .container {
+            padding-bottom: 3rem;
+        }
+
+        p {
+            color: var(--cinema-text-muted);
+        }
+    </style>
 </head>
-<body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
         <div class="container-fluid">
             <a class="navbar-brand" href="{% url 'app:index' %}">🎬 Filmes &amp; Séries</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
