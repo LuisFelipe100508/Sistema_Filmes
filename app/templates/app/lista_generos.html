@@ -1,0 +1,15 @@
+{% extends "app/base.html" %}
+{% block title %}Gêneros{% endblock %}
+{% block content %}
+<h2 class="mb-3">Gêneros / Categorias</h2>
+<table class="table table-striped table-bordered">
+    <thead class="table-dark"><tr><th>Nome</th></tr></thead>
+    <tbody>
+        {% for g in generos %}
+        <tr><td>{{ g.nome }}</td></tr>
+        {% empty %}
+        <tr><td class="text-center">Nenhum gênero cadastrado.</td></tr>
+        {% endfor %}
+    </tbody>
+</table>
+{% endblock %}
