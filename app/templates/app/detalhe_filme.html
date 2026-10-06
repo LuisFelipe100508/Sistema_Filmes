@@ -1,0 +1,111 @@
+{% extends "app/base.html" %}
+{% block title %}{{ filme.nome }}{% endblock %}
+{% block content %}
+
+<div class="filme-hero" {% if filme.backdrop_url %}style="background-image: linear-gradient(to bottom, rgba(18,0,20,0.4), var(--cinema-bg) 95%), url('{{ filme.backdrop_url }}');"{% endif %}>
+    <div class="filme-hero-content">
+        <div class="filme-poster-grande">
+            {% if filme.poster_url %}
+                <img src="{{ filme.poster_url }}" alt="{{ filme.nome }}">
+            {% else %}
+                <div class="poster-placeholder" style="aspect-ratio:2/3;"><i class="bi bi-film"></i></div>
+            {% endif %}
+        </div>
+        <div class="filme-info-grande">
+            <span class="poster-badge status-badge-inline {% if filme.status_cartaz == 'em_cartaz' %}badge-cartaz{% elif filme.status_cartaz == 'em_breve' %}badge-breve{% else %}badge-fora{% endif %}">
+                {{ filme.get_status_cartaz_display }}
+            </span>
+            <h1>{{ filme.nome }}</h1>
+            <div class="filme-meta">
+                {% if filme.nota_avaliacao %}<span><i class="bi bi-star-fill"></i> {{ filme.nota_avaliacao }} TMDB</span>{% endif %}
+                {% if media_usuarios %}<span><i class="bi bi-people-fill"></i> {{ media_usuarios }}/5 CineSul</span>{% endif %}
+                <span><i class="bi bi-calendar3"></i> {{ filme.data_estreia_cinema|default:filme.data_lancamento }}</span>
+                <span><i class="bi bi-clock"></i> {{ filme.duracao }}</span>
+            </div>
+            <div class="filme-generos">
+                {% for g in filme.genero.all %}<span class="tag-genero">{{ g.nome }}</span>{% endfor %}
+            </div>
+            <p class="filme-sinopse">{{ filme.sinopse|default:"Sinopse não disponível." }}</p>
+            {% if filme.diretor %}<p><strong>Diretor:</strong> {{ filme.diretor.nome }}</p>{% endif %}
+            {% if filme.elenco.all %}
+            <p><strong>Elenco:</strong>
+                {% for fa in filme.elenco.all %}{{ fa.ator.nome }}{% if not forloop.last %}, {% endif %}{% endfor %}
+            </p>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<!-- ONDE ASSISTIR -->
+<h2 class="mt-5"><i class="bi bi-geo-alt-fill"></i> Onde assistir na região</h2>
+{% if sessoes_ativas %}
+<div class="row g-3">
+    {% for s in sessoes_ativas %}
+    <div class="col-md-4">
+        <div class="cinema-card">
+            <h4>{{ s.cinema.nome }}</h4>
+            <p class="text-muted-cine">{{ s.cinema.cidade }}/{{ s.cinema.estado }}</p>
+            <p>{{ s.get_formato_display }} • {{ s.get_audio_display }}</p>
+            {% if s.horarios %}<p><strong>Horários:</strong> {{ s.horarios }}</p>{% endif %}
+            <p class="small text-muted-cine">Em cartaz até {{ s.data_fim_exibicao|default:"data a confirmar" }}</p>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">Nenhuma sessão cadastrada para este filme nos cinemas da região ainda.</div>
+{% endif %}
+
+<!-- AVALIAÇÕES DA COMUNIDADE -->
+<h2 class="mt-5"><i class="bi bi-chat-square-text-fill"></i> Avaliações de quem já assistiu</h2>
+
+{% if user.is_authenticated %}
+    {% if not ja_avaliou %}
+    <form method="post" action="{% url 'app:avaliar_filme' filme.id %}" class="avaliacao-form mb-4">
+        {% csrf_token %}
+        <label class="form-label">Sua nota:</label>
+        <select name="nota" class="form-select mb-2" style="max-width:200px;">
+            <option value="5">5 — Excelente</option>
+            <option value="4">4 — Muito bom</option>
+            <option value="3">3 — Bom</option>
+            <option value="2">2 — Fraco</option>
+            <option value="1">1 — Ruim</option>
+        </select>
+        <textarea name="comentario" class="form-control mb-2" rows="3" placeholder="O que você achou do filme?"></textarea>
+        <button type="submit" class="btn-cine">Publicar avaliação</button>
+    </form>
+    {% else %}
+    <p class="text-muted-cine">Você já avaliou este filme. Envie novamente pra atualizar sua nota/comentário.</p>
+    <form method="post" action="{% url 'app:avaliar_filme' filme.id %}" class="avaliacao-form mb-4">
+        {% csrf_token %}
+        <select name="nota" class="form-select mb-2" style="max-width:200px;">
+            <option value="5">5 — Excelente</option>
+            <option value="4">4 — Muito bom</option>
+            <option value="3">3 — Bom</option>
+            <option value="2">2 — Fraco</option>
+            <option value="1">1 — Ruim</option>
+        </select>
+        <textarea name="comentario" class="form-control mb-2" rows="3" placeholder="Atualize seu comentário"></textarea>
+        <button type="submit" class="btn-cine">Atualizar avaliação</button>
+    </form>
+    {% endif %}
+{% else %}
+    <div class="empty-state mb-4">
+        <a href="{% url 'app:login' %}">Entre</a> ou <a href="{% url 'app:registrar' %}">crie uma conta</a> para avaliar este filme.
+    </div>
+{% endif %}
+
+{% for a in avaliacoes %}
+<div class="comentario-card">
+    <div class="comentario-header">
+        <strong>{{ a.usuario.username }}</strong>
+        <span><i class="bi bi-star-fill"></i> {{ a.nota }}/5</span>
+    </div>
+    {% if a.comentario %}<p>{{ a.comentario }}</p>{% endif %}
+    <span class="comentario-data">{{ a.data_criacao|date:"d/m/Y H:i" }}</span>
+</div>
+{% empty %}
+<p class="text-muted-cine">Nenhuma avaliação ainda. Seja o primeiro a comentar!</p>
+{% endfor %}
+
+{% endblock %}

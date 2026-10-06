@@ -1,4 +1,5 @@
 from django.db import models
+from django.contrib.auth.models import User
 
 
 # =========================================================
@@ -86,6 +87,23 @@ class Filme(models.Model):
     data_lancamento = models.DateField()
     nota_avaliacao = models.DecimalField(
         max_digits=3, decimal_places=1, blank=True, null=True
+    )
+    tmdb_id = models.IntegerField(unique=True, null=True, blank=True, help_text="ID do filme na API do TMDB")
+    poster_url = models.URLField(blank=True, null=True, help_text="URL da capa/poster do filme")
+    backdrop_url = models.URLField(blank=True, null=True, help_text="URL da imagem de fundo (banner)")
+
+    STATUS_CHOICES = [
+        ("em_cartaz", "Em cartaz"),
+        ("em_breve", "Em breve"),
+        ("fora_de_cartaz", "Fora de cartaz"),
+    ]
+    status_cartaz = models.CharField(
+        max_length=20, choices=STATUS_CHOICES, default="fora_de_cartaz",
+        help_text="Situação do filme nos cinemas"
+    )
+    data_estreia_cinema = models.DateField(
+        null=True, blank=True,
+        help_text="Data de estreia nos cinemas (pode ser diferente de data_lancamento)"
     )
 
     genero = models.ManyToManyField(Genero, related_name="filmes", blank=True)
@@ -218,3 +236,91 @@ class SerieEpisodio(models.Model):
 
     def __str__(self):
         return f"{self.serie.nome} - {self.temporada} - {self.episodio.nome}"
+
+    # =========================================================
+# Cinema - representa uma sala/rede de cinema da região
+# =========================================================
+class Cinema(models.Model):
+    nome = models.CharField(max_length=150)
+    endereco = models.CharField(max_length=255)
+    cidade = models.CharField(max_length=100)
+    estado = models.CharField(max_length=2, help_text="Sigla, ex: MG")
+    site = models.URLField(blank=True, null=True)
+    latitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
+    longitude = models.DecimalField(max_digits=9, decimal_places=6, blank=True, null=True)
+
+    class Meta:
+        verbose_name = "Cinema"
+        verbose_name_plural = "Cinemas"
+        ordering = ["cidade", "nome"]
+
+    def __str__(self):
+        return f"{self.nome} ({self.cidade}/{self.estado})"
+
+class AvaliacaoUsuario(models.Model):
+    filme = models.ForeignKey(Filme, on_delete=models.CASCADE, related_name="avaliacoes_usuarios")
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name="avaliacoes")
+    nota = models.PositiveSmallIntegerField(help_text="Nota de 1 a 5 estrelas")
+    comentario = models.TextField(blank=True, null=True)
+    data_criacao = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Avaliação de Usuário"
+        verbose_name_plural = "Avaliações de Usuários"
+        ordering = ["-data_criacao"]
+        unique_together = ("filme", "usuario")  # 1 avaliação por usuário por filme
+
+    def __str__(self):
+        return f"{self.usuario.username} avaliou {self.filme.nome} ({self.nota}★)"
+# =========================================================
+# Sessao - liga um Filme a um Cinema, com o período de exibição
+# =========================================================
+class Sessao(models.Model):
+    filme = models.ForeignKey(Filme, on_delete=models.CASCADE, related_name="sessoes")
+    cinema = models.ForeignKey(Cinema, on_delete=models.CASCADE, related_name="sessoes")
+
+    data_inicio_exibicao = models.DateField(help_text="Desde quando está passando neste cinema")
+    data_fim_exibicao = models.DateField(
+        null=True, blank=True,
+        help_text="Até quando fica em cartaz neste cinema (em branco = indefinido)"
+    )
+
+    FORMATO_CHOICES = [
+        ("2D", "2D"),
+        ("3D", "3D"),
+        ("IMAX", "IMAX"),
+        ("4DX", "4DX"),
+    ]
+    formato = models.CharField(max_length=10, choices=FORMATO_CHOICES, default="2D")
+
+    LEGENDA_CHOICES = [
+        ("dublado", "Dublado"),
+        ("legendado", "Legendado"),
+        ("original", "Idioma original"),
+    ]
+    audio = models.CharField(max_length=10, choices=LEGENDA_CHOICES, default="dublado")
+
+    horarios = models.CharField(
+        max_length=255, blank=True, null=True,
+        help_text="Horários das sessões, separados por vírgula. Ex: 14:00, 17:30, 20:45"
+    )
+
+    class Meta:
+        verbose_name = "Sessão"
+        verbose_name_plural = "Sessões"
+        ordering = ["-data_inicio_exibicao"]
+        unique_together = ("filme", "cinema", "formato", "audio")
+
+    def __str__(self):
+        return f"{self.filme.nome} em {self.cinema.nome} ({self.formato}/{self.audio})"
+
+    @property
+    def em_cartaz_agora(self):
+        """Verifica se a sessão está ativa hoje."""
+        from datetime import date
+        hoje = date.today()
+        if self.data_inicio_exibicao > hoje:
+            return False
+        if self.data_fim_exibicao and self.data_fim_exibicao < hoje:
+            return False
+        return True

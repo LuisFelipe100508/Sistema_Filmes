@@ -3,18 +3,187 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>{% block title %}Sistema de Filmes e Séries{% endblock %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}CineSul{% endblock %}</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        :root {
+            --cinema-red: #e50914;
+            --cinema-red-dark: #b0060f;
+            --cinema-purple: #6a1b9a;
+            --cinema-purple-dark: #4a0f6e;
+            --cinema-bg: #120014;
+            --cinema-bg-2: #1a0a20;
+            --cinema-card: #201028;
+            --cinema-text: #f2eaf5;
+            --cinema-text-muted: #b9a8c4;
+        }
+        * { font-family: 'Poppins', sans-serif; box-sizing: border-box; }
+        body {
+            background: radial-gradient(circle at top, var(--cinema-bg-2) 0%, var(--cinema-bg) 70%);
+            color: var(--cinema-text);
+            min-height: 100vh;
+            margin: 0;
+        }
+        a { color: #ff6b81; }
+
+        .navbar {
+            background: linear-gradient(90deg, var(--cinema-red-dark) 0%, var(--cinema-purple-dark) 100%) !important;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+        }
+        .navbar-brand { font-weight: 700; font-size: 1.4rem; color: #fff !important; text-shadow: 0 2px 6px rgba(0,0,0,0.4); }
+        .navbar .nav-link { color: rgba(255,255,255,0.85) !important; font-weight: 500; transition: color .2s; }
+        .navbar .nav-link:hover { color: #fff !important; text-shadow: 0 0 8px rgba(255,255,255,0.6); }
+
+        .btn-cine-nav {
+            background: linear-gradient(90deg, var(--cinema-red), var(--cinema-purple));
+            color: #fff !important; padding: 6px 16px; border-radius: 999px; font-size: .85rem;
+            font-weight: 600; text-decoration: none; margin-left: 10px; display: inline-block;
+        }
+        .btn-cine {
+            background: linear-gradient(90deg, var(--cinema-red), var(--cinema-purple));
+            color: #fff; border: none; padding: 9px 22px; border-radius: 8px;
+            font-weight: 600; cursor: pointer;
+        }
+        .btn-cine:hover { opacity: .9; color: #fff; }
+
+        h1, h2 { font-weight: 600; color: #fff; }
+        h2 { border-left: 5px solid var(--cinema-red); padding-left: 12px; margin-bottom: 1rem !important; }
+        h2 i { color: var(--cinema-red); margin-right: 6px; }
+
+        .table { background-color: var(--cinema-card); color: var(--cinema-text); border-radius: 12px; overflow: hidden; box-shadow: 0 8px 24px rgba(0,0,0,0.4); }
+        .table thead.table-dark { background: linear-gradient(90deg, var(--cinema-red-dark), var(--cinema-purple-dark)); }
+        .table thead th { border: none; font-weight: 600; text-transform: uppercase; font-size: .8rem; padding: 14px 12px; }
+        .table-striped > tbody > tr:nth-of-type(odd) > * { background-color: rgba(255,255,255,0.03); color: var(--cinema-text); }
+        .table-striped > tbody > tr:nth-of-type(even) > * { background-color: transparent; color: var(--cinema-text); }
+        .table td, .table th { border-color: rgba(255,255,255,0.08); vertical-align: middle; }
+        .table tbody tr:hover td { background-color: rgba(229,9,20,0.12); }
+
+        .container { padding-bottom: 3rem; }
+        p { color: var(--cinema-text-muted); }
+
+        /* Hero */
+        .hero { padding: 3rem 1rem 1rem; text-align: center; }
+        .hero-badge {
+            display: inline-block; background: rgba(229,9,20,0.15);
+            border: 1px solid rgba(229,9,20,0.4); color: #ff8a95;
+            font-size: .8rem; font-weight: 600; padding: 6px 16px;
+            border-radius: 999px; margin-bottom: 1.2rem;
+        }
+        .hero h1 {
+            background: linear-gradient(90deg, var(--cinema-red), var(--cinema-purple));
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent; font-weight: 800;
+        }
+        .hero-subtitle { color: var(--cinema-text-muted); font-size: 1.05rem; max-width: 600px; margin: 0 auto; }
+
+        /* ===== Carrossel de pôsteres ===== */
+        .section-row { display: flex; justify-content: space-between; align-items: baseline; margin-top: 2rem; }
+        .poster-scroll {
+            display: flex; flex-wrap: nowrap; gap: 1.2rem; overflow-x: auto;
+            padding: .5rem .2rem 1.5rem; scroll-snap-type: x mandatory;
+        }
+        .poster-scroll::-webkit-scrollbar { height: 8px; }
+        .poster-scroll::-webkit-scrollbar-thumb { background: var(--cinema-red-dark); border-radius: 10px; }
+        .poster-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+
+        .poster-card {
+            flex: 0 0 190px; width: 190px; scroll-snap-align: start; position: relative;
+            background: var(--cinema-card); border-radius: 14px; overflow: hidden;
+            border: 1px solid rgba(255,255,255,0.08);
+            transition: transform .25s ease, box-shadow .25s ease;
+            text-decoration: none; display: block;
+        }
+        .poster-card:hover {
+            transform: translateY(-8px) scale(1.02);
+            box-shadow: 0 16px 34px rgba(229,9,20,0.35);
+            border-color: rgba(229,9,20,0.5);
+            z-index: 2;
+        }
+        .poster-img-wrap { position: relative; width: 100%; aspect-ratio: 2/3; background: linear-gradient(135deg, var(--cinema-purple-dark), var(--cinema-red-dark)); }
+        .poster-img-wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .poster-placeholder {
+            width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+            font-size: 2.6rem; color: rgba(255,255,255,0.5);
+        }
+        .poster-rating {
+            position: absolute; top: 8px; right: 8px;
+            background: rgba(10,0,15,0.85); border: 1px solid rgba(255,255,255,0.15);
+            color: #ffd24a; font-weight: 700; font-size: .85rem;
+            padding: 4px 9px; border-radius: 999px; display: flex; align-items: center; gap: 5px;
+        }
+        .poster-badge {
+            position: absolute; top: 8px; left: 8px;
+            font-size: .68rem; font-weight: 700; text-transform: uppercase;
+            padding: 4px 9px; border-radius: 999px; letter-spacing: .3px;
+        }
+        .badge-cartaz { background: var(--cinema-red); color: #fff; }
+        .badge-breve { background: var(--cinema-purple); color: #fff; }
+        .badge-fora { background: #555; color: #fff; }
+        .status-badge-inline {
+            position: static;
+            display: inline-block;
+            margin-bottom: 10px;
+        }
+        .poster-info { padding: .75rem .8rem .9rem; }
+        .poster-info h4 {
+            font-size: .95rem; font-weight: 600; color: #fff; margin: 0 0 4px; line-height: 1.2;
+            display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;
+        }
+        .poster-info .poster-date { font-size: .75rem; color: var(--cinema-text-muted); }
+
+        .empty-state {
+            background: var(--cinema-card); border: 1px dashed rgba(255,255,255,0.15);
+            border-radius: 14px; padding: 2rem; text-align: center; color: var(--cinema-text-muted);
+        }
+
+        /* Auth */
+        .auth-box {
+            max-width: 420px; margin: 2rem auto; background: var(--cinema-card);
+            padding: 2rem; border-radius: 16px; border: 1px solid rgba(255,255,255,0.08);
+        }
+        .auth-box input {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.15);
+            color: var(--cinema-text); border-radius: 8px; padding: 8px 12px; width: 100%;
+        }
+
+        /* Detalhe do filme */
+        .filme-hero { border-radius: 16px; padding: 2rem; background-size: cover; background-position: center; margin-bottom: 1rem; }
+        .filme-hero-content { display: flex; gap: 2rem; flex-wrap: wrap; }
+        .filme-poster-grande { position: relative; flex: 0 0 240px; border-radius: 12px; overflow: hidden; box-shadow: 0 12px 30px rgba(0,0,0,0.5); }
+        .filme-poster-grande img { width: 100%; display: block; }
+        .filme-info-grande { flex: 1; min-width: 280px; }
+        .filme-info-grande h1 { font-size: 2rem; margin: .5rem 0; }
+        .filme-meta { display: flex; gap: 1.2rem; flex-wrap: wrap; color: var(--cinema-text-muted); font-size: .9rem; margin-bottom: .8rem; }
+        .filme-meta span { display: inline-flex; align-items: center; gap: 6px; }
+        .filme-meta i { color: #ffd24a; }
+        .filme-generos { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 1rem; }
+        .tag-genero { background: rgba(255,255,255,0.08); padding: 4px 12px; border-radius: 999px; font-size: .78rem; color: var(--cinema-text); }
+        .filme-sinopse { font-size: 1rem; line-height: 1.6; max-width: 700px; }
+
+        .cinema-card { background: var(--cinema-card); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 1.2rem; }
+        .cinema-card h4 { color: #fff; margin-bottom: 2px; }
+        .text-muted-cine { color: var(--cinema-text-muted); }
+
+        .avaliacao-form { background: var(--cinema-card); border: 1px solid rgba(255,255,255,0.08); border-radius: 14px; padding: 1.2rem; }
+        .avaliacao-form textarea, .avaliacao-form select { background: rgba(255,255,255,0.05); color: var(--cinema-text); border: 1px solid rgba(255,255,255,0.15); }
+
+        .comentario-card { background: var(--cinema-card); border: 1px solid rgba(255,255,255,0.08); border-radius: 12px; padding: 1rem 1.2rem; margin-bottom: .8rem; }
+        .comentario-header { display: flex; justify-content: space-between; align-items: center; color: #ffd24a; font-weight: 600; margin-bottom: 4px; }
+        .comentario-header span { display: inline-flex; align-items: center; gap: 5px; }
+        .comentario-data { font-size: .75rem; color: var(--cinema-text-muted); }
+    </style>
 </head>
-<body class="bg-light">
-    <nav class="navbar navbar-expand-lg navbar-dark bg-dark mb-4">
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark mb-4">
         <div class="container-fluid">
-            <a class="navbar-brand" href="{% url 'app:index' %}">🎬 Filmes &amp; Séries</a>
+            <a class="navbar-brand" href="{% url 'app:index' %}"><i class="bi bi-film"></i> CineSul</a>
             <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#nav">
                 <span class="navbar-toggler-icon"></span>
             </button>
             <div class="collapse navbar-collapse" id="nav">
-                <ul class="navbar-nav">
+                <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link" href="{% url 'app:lista_filmes' %}">Filmes</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'app:lista_filme_atores' %}">Filmes/Atores</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'app:lista_series' %}">Séries</a></li>
@@ -25,8 +194,14 @@
                     <li class="nav-item"><a class="nav-link" href="{% url 'app:lista_paises' %}">Países</a></li>
                     <li class="nav-item"><a class="nav-link" href="{% url 'app:lista_continentes' %}">Continentes</a></li>
                 </ul>
-                <ul class="navbar-nav ms-auto">
-                    <li class="nav-item"><a class="nav-link" href="/admin">Admin</a></li>
+                <ul class="navbar-nav">
+                    {% if user.is_authenticated %}
+                        <li class="nav-item d-flex align-items-center"><span class="nav-link">Olá, {{ user.username }}</span></li>
+                        <li class="nav-item d-flex align-items-center"><a href="{% url 'app:logout' %}" class="btn-cine-nav">Sair</a></li>
+                    {% else %}
+                        <li class="nav-item d-flex align-items-center"><a href="{% url 'app:login' %}" class="nav-link">Entrar</a></li>
+                        <li class="nav-item d-flex align-items-center"><a href="{% url 'app:registrar' %}" class="btn-cine-nav">Criar conta</a></li>
+                    {% endif %}
                 </ul>
             </div>
         </div>
@@ -34,5 +209,8 @@
     <div class="container">
         {% block content %}{% endblock %}
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+    {% block extra_js %}{% endblock %}
 </body>
 </html>

@@ -1,5 +1,68 @@
 {% extends "app/base.html" %}
 {% block content %}
-<h1 class="mb-4">Sistema de Gerenciamento de Filmes e Séries</h1>
-<p>Utilize o menu acima para navegar entre as listagens de cada funcionalidade.</p>
+
+<div class="hero">
+    <div class="hero-badge"><i class="bi bi-film"></i> CineSul</div>
+    <h1 class="display-5">Sistema de Gerenciamento de Filmes e Séries</h1>
+    <p class="hero-subtitle">Confira o que está em cartaz, o que vem por aí, e explore todo o catálogo.</p>
+</div>
+
+<div class="section-row">
+    <h2><i class="bi bi-ticket-perforated"></i> Em Cartaz</h2>
+    <a href="{% url 'app:lista_filmes' %}" style="color: var(--cinema-text-muted); font-size:.85rem; text-decoration:none;">ver todos →</a>
+</div>
+
+{% if em_cartaz %}
+<div class="poster-scroll">
+    {% for f in em_cartaz %}
+    <a href="{% url 'app:detalhe_filme' f.id %}" class="poster-card">
+        <div class="poster-img-wrap">
+            {% if f.poster_url %}
+                <img src="{{ f.poster_url }}" alt="{{ f.nome }}">
+            {% else %}
+                <div class="poster-placeholder"><i class="bi bi-film"></i></div>
+            {% endif %}
+            <span class="poster-badge badge-cartaz">Em cartaz</span>
+            {% if f.nota_avaliacao %}
+            <span class="poster-rating"><i class="bi bi-star-fill"></i> {{ f.nota_avaliacao }}</span>
+            {% endif %}
+        </div>
+        <div class="poster-info">
+            <h4>{{ f.nome }}</h4>
+            <div class="poster-date">{{ f.data_estreia_cinema|default:f.data_lancamento }}</div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">Nenhum filme marcado como "Em cartaz" ainda.</div>
+{% endif %}
+
+<div class="section-row">
+    <h2><i class="bi bi-calendar-event"></i> Em Breve</h2>
+</div>
+
+{% if em_breve %}
+<div class="poster-scroll">
+    {% for f in em_breve %}
+    <a href="{% url 'app:detalhe_filme' f.id %}" class="poster-card">
+        <div class="poster-img-wrap">
+            {% if f.poster_url %}
+                <img src="{{ f.poster_url }}" alt="{{ f.nome }}">
+            {% else %}
+                <div class="poster-placeholder"><i class="bi bi-film"></i></div>
+            {% endif %}
+            <span class="poster-badge badge-breve">Em breve</span>
+        </div>
+        <div class="poster-info">
+            <h4>{{ f.nome }}</h4>
+            <div class="poster-date">Estreia: {{ f.data_estreia_cinema|default:"a definir" }}</div>
+        </div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">Nenhum filme marcado como "Em breve" ainda.</div>
+{% endif %}
+
 {% endblock %}

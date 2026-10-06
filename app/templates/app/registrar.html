@@ -1,0 +1,24 @@
+{% extends "app/base.html" %}
+{% block title %}Criar conta{% endblock %}
+{% block content %}
+<div class="auth-box">
+    <h2>Criar conta</h2>
+    <form method="post">
+        {% csrf_token %}
+        {% for field in form %}
+        <div class="mb-3">
+            <label class="form-label">{{ field.label }}</label>
+            {{ field }}
+            {% if field.errors %}
+                <div class="text-danger small mt-1">{{ field.errors|striptags }}</div>
+            {% endif %}
+            {% if field.help_text %}
+                <div class="form-text" style="color: var(--cinema-text-muted);">{{ field.help_text }}</div>
+            {% endif %}
+        </div>
+        {% endfor %}
+        <button type="submit" class="btn-cine w-100">Criar conta</button>
+    </form>
+    <p class="mt-3 text-center">Já tem conta? <a href="{% url 'app:login' %}">Entrar</a></p>
+</div>
+{% endblock %}

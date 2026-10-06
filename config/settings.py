@@ -129,3 +129,6 @@ STATICFILES_DIRS = [
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+TMDB_API_KEY = os.environ.get('TMDB_API_KEY', '')
+TMDB_LANGUAGE = 'pt-BR'
+TMDB_REGION = 'BR'
