@@ -173,6 +173,75 @@
         .comentario-header { display: flex; justify-content: space-between; align-items: center; color: #ffd24a; font-weight: 600; margin-bottom: 4px; }
         .comentario-header span { display: inline-flex; align-items: center; gap: 5px; }
         .comentario-data { font-size: .75rem; color: var(--cinema-text-muted); }
+                /* Grid de catálogo (listagem de filmes/séries em cards) */
+                .catalogo-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(190px, 1fr));
+            gap: 1.4rem;
+        }
+
+        /* Cards de entidades simples (gênero, país, continente, pessoa) */
+        .entidade-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1rem;
+        }
+        .entidade-card {
+            background: var(--cinema-card); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 14px; padding: 1.2rem 1.4rem;
+            transition: transform .2s ease, box-shadow .2s ease, border-color .2s ease;
+        }
+        .entidade-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 24px rgba(229,9,20,0.2);
+            border-color: rgba(229,9,20,0.4);
+        }
+        .entidade-card h4 { color: #fff; font-size: 1.05rem; margin: 0 0 6px; display: flex; align-items: center; gap: 8px; }
+        .entidade-card h4 i { color: var(--cinema-red); }
+        .entidade-card p { margin: 2px 0; font-size: .85rem; }
+        .entidade-card .entidade-social { display: flex; gap: 10px; margin-top: 8px; }
+        .entidade-card .entidade-social a { color: var(--cinema-text-muted); font-size: 1rem; }
+        .entidade-card .entidade-social a:hover { color: #ff6b81; }
+
+        .filtro-barra {
+            display: flex; gap: .6rem; flex-wrap: wrap; margin-bottom: 1.6rem;
+        }
+        .filtro-barra input {
+            background: var(--cinema-card); border: 1px solid rgba(255,255,255,0.1);
+            color: var(--cinema-text); border-radius: 999px; padding: 8px 18px;
+            flex: 1; min-width: 200px;
+        }
+        .filtro-barra input::placeholder { color: var(--cinema-text-muted); }
+        .filtro-barra select {
+            background: var(--cinema-card); border: 1px solid rgba(255,255,255,0.1);
+            color: var(--cinema-text); border-radius: 999px; padding: 8px 18px;
+        }
+
+        .page-title { display: flex; align-items: center; gap: 10px; }
+        .page-title i { color: var(--cinema-red); }
+
+        /* Tabelas de relação (ainda em formato tabela, mas com tema) */
+        .table-wrap { border-radius: 14px; overflow: hidden; }
+        .elenco-scroll {
+            display: flex; gap: 1.2rem; overflow-x: auto; padding: .3rem .2rem 1.2rem;
+        }
+        .elenco-scroll::-webkit-scrollbar { height: 8px; }
+        .elenco-scroll::-webkit-scrollbar-thumb { background: var(--cinema-red-dark); border-radius: 10px; }
+        .elenco-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); }
+
+        .elenco-card { flex: 0 0 110px; text-align: center; }
+        .elenco-foto {
+            width: 100px; height: 100px; border-radius: 50%; overflow: hidden;
+            border: 2px solid rgba(229,9,20,0.4); margin: 0 auto 8px;
+            background: linear-gradient(135deg, var(--cinema-purple-dark), var(--cinema-red-dark));
+        }
+        .elenco-foto img { width: 100%; height: 100%; object-fit: cover; display: block; }
+        .elenco-foto-placeholder {
+            width: 100%; height: 100%; display: flex; align-items: center; justify-content: center;
+            font-size: 2rem; color: rgba(255,255,255,0.6);
+        }
+        .elenco-nome { font-size: .85rem; font-weight: 600; color: #fff; line-height: 1.2; }
+        .elenco-personagem { font-size: .75rem; color: var(--cinema-text-muted); margin-top: 2px; }
     </style>
 </head>
 <body>
@@ -185,14 +254,6 @@
             <div class="collapse navbar-collapse" id="nav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link" href="{% url 'app:lista_filmes' %}">Filmes</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'app:lista_filme_atores' %}">Filmes/Atores</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'app:lista_series' %}">Séries</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'app:lista_temporadas' %}">Temporadas</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'app:lista_episodios' %}">Episódios</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'app:lista_generos' %}">Gêneros</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'app:lista_pessoas' %}">Atores/Diretores</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'app:lista_paises' %}">Países</a></li>
-                    <li class="nav-item"><a class="nav-link" href="{% url 'app:lista_continentes' %}">Continentes</a></li>
                 </ul>
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}

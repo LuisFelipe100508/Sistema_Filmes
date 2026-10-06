@@ -20,6 +20,7 @@ from app.models import Filme, Genero, Pais, Pessoa
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
 POSTER_BASE_URL = "https://image.tmdb.org/t/p/w500"
 BACKDROP_BASE_URL = "https://image.tmdb.org/t/p/w1280"
+PROFILE_BASE_URL = "https://image.tmdb.org/t/p/w185"
 
 # Filmes "em cartaz" só são aceitos se estrearam nos últimos N dias
 # ou nos próximos 7 dias (evita re-lançamentos antigos tipo "Vingadores 2019").
@@ -181,6 +182,7 @@ class Command(BaseCommand):
                 paises_obj.append(pais_obj)
             filme.pais.set(paises_obj)
 
+                # Diretor (busca nos créditos)
         creditos = self._buscar_creditos(tmdb_id, api_key)
         if creditos:
             diretor_info = next(
@@ -188,8 +190,25 @@ class Command(BaseCommand):
             )
             if diretor_info:
                 diretor_obj, _ = Pessoa.objects.get_or_create(nome=diretor_info["name"])
+                if diretor_info.get("profile_path") and not diretor_obj.foto_url:
+                    diretor_obj.foto_url = f"{PROFILE_BASE_URL}{diretor_info['profile_path']}"
+                    diretor_obj.save()
                 filme.diretor = diretor_obj
                 filme.save()
+
+            # Elenco - pega os 10 primeiros atores do cast (já vem ordenado por relevância)
+            from app.models import FilmeAtor
+            elenco_tmdb = creditos.get("cast", [])[:10]
+            for ordem, ator_info in enumerate(elenco_tmdb):
+                ator_obj, _ = Pessoa.objects.get_or_create(nome=ator_info["name"])
+                if ator_info.get("profile_path") and not ator_obj.foto_url:
+                    ator_obj.foto_url = f"{PROFILE_BASE_URL}{ator_info['profile_path']}"
+                    ator_obj.save()
+                FilmeAtor.objects.update_or_create(
+                    filme=filme,
+                    ator=ator_obj,
+                    defaults={"personagem": ator_info.get("character", "")},
+                )
 
         return criado
 

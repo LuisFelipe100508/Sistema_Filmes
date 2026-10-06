@@ -57,6 +57,7 @@ class Genero(models.Model):
 # =========================================================
 class Pessoa(models.Model):
     nome = models.CharField(max_length=150)
+    foto_url = models.URLField(blank=True, null=True, help_text="Foto do ator/diretor (TMDB)")
     site = models.URLField(blank=True, null=True)
     insta = models.CharField("Instagram", max_length=150, blank=True, null=True)
     face = models.CharField("Facebook", max_length=150, blank=True, null=True)

@@ -27,14 +27,29 @@
             </div>
             <p class="filme-sinopse">{{ filme.sinopse|default:"Sinopse não disponível." }}</p>
             {% if filme.diretor %}<p><strong>Diretor:</strong> {{ filme.diretor.nome }}</p>{% endif %}
-            {% if filme.elenco.all %}
-            <p><strong>Elenco:</strong>
-                {% for fa in filme.elenco.all %}{{ fa.ator.nome }}{% if not forloop.last %}, {% endif %}{% endfor %}
-            </p>
-            {% endif %}
         </div>
     </div>
 </div>
+
+<!-- ELENCO -->
+{% if elenco %}
+<h2 class="mt-5"><i class="bi bi-people-fill"></i> Elenco</h2>
+<div class="elenco-scroll">
+    {% for fa in elenco %}
+    <div class="elenco-card">
+        <div class="elenco-foto">
+            {% if fa.ator.foto_url %}
+                <img src="{{ fa.ator.foto_url }}" alt="{{ fa.ator.nome }}">
+            {% else %}
+                <div class="elenco-foto-placeholder"><i class="bi bi-person-fill"></i></div>
+            {% endif %}
+        </div>
+        <div class="elenco-nome">{{ fa.ator.nome }}</div>
+        {% if fa.personagem %}<div class="elenco-personagem">{{ fa.personagem }}</div>{% endif %}
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
 
 <!-- ONDE ASSISTIR -->
 <h2 class="mt-5"><i class="bi bi-geo-alt-fill"></i> Onde assistir na região</h2>
@@ -59,7 +74,11 @@
 <!-- AVALIAÇÕES DA COMUNIDADE -->
 <h2 class="mt-5"><i class="bi bi-chat-square-text-fill"></i> Avaliações de quem já assistiu</h2>
 
-{% if user.is_authenticated %}
+{% if filme.status_cartaz == "em_breve" %}
+    <div class="empty-state mb-4">
+        <i class="bi bi-hourglass-split"></i> Este filme ainda não estreou. As avaliações ficam disponíveis a partir do lançamento.
+    </div>
+{% elif user.is_authenticated %}
     {% if not ja_avaliou %}
     <form method="post" action="{% url 'app:avaliar_filme' filme.id %}" class="avaliacao-form mb-4">
         {% csrf_token %}

@@ -4,20 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import render, redirect, get_object_or_404
 
-from .models import (
-    Continente,
-    Pais,
-    Genero,
-    Pessoa,
-    Filme,
-    FilmeAtor,
-    Serie,
-    Temporada,
-    Episodio,
-    SerieEpisodio,
-    AvaliacaoUsuario,
-    Sessao,
-)
+from .models import Filme, AvaliacaoUsuario
 
 
 def index(request):
@@ -49,6 +36,7 @@ def detalhe_filme(request, filme_id):
 
     return render(request, "app/detalhe_filme.html", {
         "filme": filme,
+        "elenco": filme.elenco.select_related("ator").all(),
         "avaliacoes": avaliacoes,
         "ja_avaliou": ja_avaliou,
         "media_usuarios": media_usuarios,
@@ -57,48 +45,8 @@ def detalhe_filme(request, filme_id):
 
 
 def lista_filmes(request):
-    filmes = Filme.objects.prefetch_related("genero", "pais", "elenco__ator").select_related("diretor")
+    filmes = Filme.objects.prefetch_related("genero", "pais").select_related("diretor")
     return render(request, "app/lista_filmes.html", {"filmes": filmes})
-
-
-def lista_filme_atores(request):
-    relacoes = FilmeAtor.objects.select_related("filme", "ator").all()
-    return render(request, "app/lista_filme_atores.html", {"relacoes": relacoes})
-
-
-def lista_series(request):
-    series = Serie.objects.prefetch_related("genero", "pais", "temporadas").select_related("diretor")
-    return render(request, "app/lista_series.html", {"series": series})
-
-
-def lista_temporadas(request):
-    temporadas = Temporada.objects.select_related("serie").all()
-    return render(request, "app/lista_temporadas.html", {"temporadas": temporadas})
-
-
-def lista_episodios(request):
-    dados = SerieEpisodio.objects.select_related("serie", "temporada", "episodio").all()
-    return render(request, "app/lista_episodios.html", {"dados": dados})
-
-
-def lista_generos(request):
-    generos = Genero.objects.all()
-    return render(request, "app/lista_generos.html", {"generos": generos})
-
-
-def lista_pessoas(request):
-    pessoas = Pessoa.objects.select_related("nacionalidade").all()
-    return render(request, "app/lista_pessoas.html", {"pessoas": pessoas})
-
-
-def lista_paises(request):
-    paises = Pais.objects.select_related("continente").all()
-    return render(request, "app/lista_paises.html", {"paises": paises})
-
-
-def lista_continentes(request):
-    continentes = Continente.objects.all()
-    return render(request, "app/lista_continentes.html", {"continentes": continentes})
 
 
 def registrar(request):
@@ -117,6 +65,10 @@ def registrar(request):
 @login_required
 def avaliar_filme(request, filme_id):
     filme = get_object_or_404(Filme, id=filme_id)
+
+    if filme.status_cartaz == "em_breve":
+        messages.error(request, "Este filme ainda não estreou — você poderá avaliá-lo após o lançamento.")
+        return redirect("app:detalhe_filme", filme_id=filme.id)
 
     if request.method == "POST":
         nota = request.POST.get("nota")
