@@ -6,10 +6,11 @@ from .models import (
     Pessoa,
     Filme,
     FilmeAtor,
-    Serie,
-    Temporada,
-    Episodio,
-    SerieEpisodio,
+    Cinema,
+    Sessao,
+    AvaliacaoUsuario,
+    Streaming,
+    FilmeStreaming,
 )
 
 
@@ -44,20 +45,32 @@ class FilmeAtorInline(admin.TabularInline):
     extra = 1
 
 
+class SessaoInline(admin.TabularInline):
+    model = Sessao
+    extra = 1
+
+
+class FilmeStreamingInline(admin.TabularInline):
+    model = FilmeStreaming
+    extra = 1
+
+
 @admin.register(Filme)
 class FilmeAdmin(admin.ModelAdmin):
     list_display = (
         "id",
         "nome",
+        "status_cartaz",
         "duracao",
         "data_lancamento",
+        "data_estreia_cinema",
         "nota_avaliacao",
         "diretor",
     )
-    list_filter = ("genero", "pais", "data_lancamento")
+    list_filter = ("status_cartaz", "genero", "pais", "data_lancamento")
     search_fields = ("nome", "sinopse")
     filter_horizontal = ("genero", "pais")
-    inlines = [FilmeAtorInline]
+    inlines = [FilmeAtorInline, SessaoInline, FilmeStreamingInline]
 
 
 @admin.register(FilmeAtor)
@@ -66,48 +79,43 @@ class FilmeAtorAdmin(admin.ModelAdmin):
     search_fields = ("filme__nome", "ator__nome")
 
 
-class TemporadaInline(admin.TabularInline):
-    model = Temporada
-    extra = 1
+@admin.register(Cinema)
+class CinemaAdmin(admin.ModelAdmin):
+    list_display = ("id", "nome", "cidade", "estado", "site")
+    list_filter = ("cidade", "estado")
+    search_fields = ("nome", "cidade")
 
 
-@admin.register(Serie)
-class SerieAdmin(admin.ModelAdmin):
+@admin.register(Sessao)
+class SessaoAdmin(admin.ModelAdmin):
     list_display = (
         "id",
-        "nome",
-        "duracao",
-        "data_lancamento",
-        "nota_avaliacao",
-        "diretor",
+        "filme",
+        "cinema",
+        "formato",
+        "audio",
+        "data_inicio_exibicao",
+        "data_fim_exibicao",
     )
-    list_filter = ("genero", "pais", "data_lancamento")
-    search_fields = ("nome", "sinopse")
-    filter_horizontal = ("genero", "pais")
-    inlines = [TemporadaInline]
+    list_filter = ("cinema", "formato", "audio")
+    search_fields = ("filme__nome", "cinema__nome")
 
 
-@admin.register(Temporada)
-class TemporadaAdmin(admin.ModelAdmin):
-    list_display = ("id", "serie", "numero")
-    list_filter = ("serie",)
+@admin.register(AvaliacaoUsuario)
+class AvaliacaoUsuarioAdmin(admin.ModelAdmin):
+    list_display = ("id", "filme", "usuario", "nota", "data_criacao")
+    list_filter = ("nota",)
+    search_fields = ("filme__nome", "usuario__username")
 
 
-@admin.register(Episodio)
-class EpisodioAdmin(admin.ModelAdmin):
+@admin.register(Streaming)
+class StreamingAdmin(admin.ModelAdmin):
     list_display = ("id", "nome")
     search_fields = ("nome",)
 
 
-@admin.register(SerieEpisodio)
-class SerieEpisodioAdmin(admin.ModelAdmin):
-    list_display = (
-        "id",
-        "serie",
-        "temporada",
-        "episodio",
-        "duracao",
-        "data_disponibilizacao",
-    )
-    list_filter = ("serie", "temporada")
-    search_fields = ("serie__nome", "episodio__nome")
+@admin.register(FilmeStreaming)
+class FilmeStreamingAdmin(admin.ModelAdmin):
+    list_display = ("id", "filme", "streaming", "tipo")
+    list_filter = ("streaming", "tipo")
+    search_fields = ("filme__nome",)

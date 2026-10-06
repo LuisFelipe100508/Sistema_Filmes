@@ -126,6 +126,39 @@ class Filme(models.Model):
         return self.nome
 
 
+class Streaming(models.Model):
+    nome = models.CharField(max_length=100, unique=True)
+    logo_url = models.URLField(blank=True, null=True)
+    tmdb_provider_id = models.IntegerField(unique=True, null=True, blank=True)
+
+    class Meta:
+        verbose_name = "Serviço de Streaming"
+        verbose_name_plural = "Serviços de Streaming"
+        ordering = ["nome"]
+
+    def __str__(self):
+        return self.nome
+
+
+class FilmeStreaming(models.Model):
+    TIPO_CHOICES = [
+        ("assinatura", "Incluído na assinatura"),
+        ("aluguel", "Aluguel"),
+        ("compra", "Compra"),
+    ]
+    filme = models.ForeignKey(Filme, on_delete=models.CASCADE, related_name="streamings")
+    streaming = models.ForeignKey(Streaming, on_delete=models.CASCADE, related_name="filmes")
+    tipo = models.CharField(max_length=20, choices=TIPO_CHOICES, default="assinatura")
+
+    class Meta:
+        verbose_name = "Filme no Streaming"
+        verbose_name_plural = "Filmes no Streaming"
+        unique_together = ("filme", "streaming", "tipo")
+
+    def __str__(self):
+        return f"{self.filme.nome} em {self.streaming.nome} ({self.get_tipo_display()})"
+
+
 # =========================================================
 # RF02 - Gerenciar Filmes com seus atores [filme], [ator]
 # =========================================================

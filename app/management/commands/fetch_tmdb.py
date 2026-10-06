@@ -21,6 +21,14 @@ TMDB_BASE_URL = "https://api.themoviedb.org/3"
 POSTER_BASE_URL = "https://image.tmdb.org/t/p/w500"
 BACKDROP_BASE_URL = "https://image.tmdb.org/t/p/w1280"
 PROFILE_BASE_URL = "https://image.tmdb.org/t/p/w185"
+LOGO_BASE_URL = "https://image.tmdb.org/t/p/w92"
+
+# Lista de provedores que queremos manter (evita poluir com serviços obscuros)
+PROVEDORES_RELEVANTES = {
+    "Netflix", "Amazon Prime Video", "Disney Plus", "HBO Max", "Max",
+    "Apple TV", "Apple TV Plus", "Paramount Plus", "Globoplay", "Star Plus",
+    "Google Play Movies", "YouTube",
+}
 
 # Filmes "em cartaz" só são aceitos se estrearam nos últimos N dias
 # ou nos próximos 7 dias (evita re-lançamentos antigos tipo "Vingadores 2019").
@@ -209,8 +217,37 @@ class Command(BaseCommand):
                     ator=ator_obj,
                     defaults={"personagem": ator_info.get("character", "")},
                 )
+            from app.models import Streaming, FilmeStreaming
+        providers_resp = requests.get(
+            f"{TMDB_BASE_URL}/movie/{tmdb_id}/watch/providers",
+            params={"api_key": api_key},
+            timeout=15,
+        )
+        if providers_resp.status_code == 200:
+            br_data = providers_resp.json().get("results", {}).get("BR", {})
+            mapeamento_tipo = {
+                "flatrate": "assinatura",
+                "rent": "aluguel",
+                "buy": "compra",
+            }
+            for chave_tmdb, tipo_local in mapeamento_tipo.items():
+                for item in br_data.get(chave_tmdb, []):
+                    nome_provider = item["provider_name"]
+                    if nome_provider not in PROVEDORES_RELEVANTES:
+                        continue
+                    streaming_obj, _ = Streaming.objects.get_or_create(
+                        tmdb_provider_id=item["provider_id"],
+                        defaults={
+                            "nome": nome_provider,
+                            "logo_url": f"{LOGO_BASE_URL}{item['logo_path']}",
+                        },
+                    )
+                    FilmeStreaming.objects.get_or_create(
+                        filme=filme, streaming=streaming_obj, tipo=tipo_local
+                    )
 
         return criado
+
 
     def _buscar_detalhes(self, tmdb_id, api_key):
         resp = requests.get(
