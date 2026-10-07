@@ -1,0 +1,14 @@
+{% extends "app/base.html" %}
+{% block title %}Gêneros{% endblock %}
+{% block content %}
+<h2 class="page-title"><i class="bi bi-tags-fill"></i> Explorar por Gênero</h2>
+
+<div class="entidade-grid">
+    {% for g in generos %}
+    <a href="{% url 'app:filmes_por_genero' g.id %}" class="entidade-card" style="text-decoration:none;">
+        <h4><i class="bi bi-bookmark-fill"></i> {{ g.nome }}</h4>
+        <p class="text-muted-cine">{{ g.filmes.count }} filme{{ g.filmes.count|pluralize }}</p>
+    </a>
+    {% endfor %}
+</div>
+{% endblock %}

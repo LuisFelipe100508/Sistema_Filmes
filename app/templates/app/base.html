@@ -244,6 +244,29 @@
         }
         .elenco-nome { font-size: .85rem; font-weight: 600; color: #fff; line-height: 1.2; }
         .elenco-personagem { font-size: .75rem; color: var(--cinema-text-muted); margin-top: 2px; }
+        .streaming-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+        .streaming-badge {
+            background: var(--cinema-card); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px; padding: .8rem 1.2rem; display: flex; align-items: center;
+            gap: 10px; min-width: 160px;
+        }
+        .streaming-badge img { width: 32px; height: 32px; border-radius: 6px; }
+        .streaming-badge span { font-weight: 600; color: #fff; font-size: .9rem; }
+        .streaming-badge small { color: var(--cinema-text-muted); display: block; font-size: .72rem; }
+        .ranking-list { display: flex; flex-direction: column; gap: .7rem; }
+        .ranking-item {
+            display: flex; align-items: center; gap: 1rem;
+            background: var(--cinema-card); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 12px; padding: .7rem 1.2rem; text-decoration: none;
+            transition: transform .15s ease, border-color .15s ease;
+        }
+        .ranking-item:hover { transform: translateX(6px); border-color: rgba(229,9,20,0.4); }
+        .ranking-posicao { font-size: 1.4rem; font-weight: 800; color: var(--cinema-text-muted); width: 36px; text-align: center; }
+        .ranking-poster { width: 50px; height: 75px; border-radius: 8px; overflow: hidden; flex-shrink: 0; }
+        .ranking-poster img { width: 100%; height: 100%; object-fit: cover; }
+        .ranking-info { flex: 1; }
+        .ranking-info h4 { color: #fff; margin: 0; font-size: 1rem; }
+        .ranking-nota { color: #ffd24a; font-weight: 700; display: flex; align-items: center; gap: 5px; }
     </style>
 </head>
 <body>
@@ -256,6 +279,8 @@
             <div class="collapse navbar-collapse" id="nav">
                 <ul class="navbar-nav me-auto">
                     <li class="nav-item"><a class="nav-link" href="{% url 'app:lista_filmes' %}">Filmes</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'app:ranking' %}">Ranking</a></li>
+                    <li class="nav-item"><a class="nav-link" href="{% url 'app:generos' %}">Gêneros</a></li>
                 </ul>
                 <ul class="navbar-nav">
                     {% if user.is_authenticated %}

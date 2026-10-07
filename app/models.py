@@ -96,7 +96,7 @@ class Filme(models.Model):
     STATUS_CHOICES = [
         ("em_cartaz", "Em cartaz"),
         ("em_breve", "Em breve"),
-        ("fora_de_cartaz", "Fora de cartaz"),
+        ("lancado", "Já lançado"),
     ]
     status_cartaz = models.CharField(
         max_length=20, choices=STATUS_CHOICES, default="fora_de_cartaz",

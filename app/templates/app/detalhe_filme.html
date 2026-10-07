@@ -71,6 +71,21 @@
 <div class="empty-state">Nenhuma sessão cadastrada para este filme nos cinemas da região ainda.</div>
 {% endif %}
 
+{% if filme.streamings.all %}
+<h2 class="mt-5"><i class="bi bi-play-circle-fill"></i> Disponível em streaming</h2>
+<div class="streaming-row">
+    {% for fs in filme.streamings.all %}
+    <div class="streaming-badge">
+        {% if fs.streaming.logo_url %}
+            <img src="{{ fs.streaming.logo_url }}" alt="{{ fs.streaming.nome }}">
+        {% endif %}
+        <span>{{ fs.streaming.nome }}</span>
+        <small>{{ fs.get_tipo_display }}</small>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
 <!-- AVALIAÇÕES DA COMUNIDADE -->
 <h2 class="mt-5"><i class="bi bi-chat-square-text-fill"></i> Avaliações de quem já assistiu</h2>
 

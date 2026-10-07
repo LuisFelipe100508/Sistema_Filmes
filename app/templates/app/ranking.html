@@ -1,0 +1,34 @@
+{% extends "app/base.html" %}
+{% block title %}Ranking{% endblock %}
+{% block content %}
+<h2 class="page-title"><i class="bi bi-trophy-fill"></i> Ranking de Filmes</h2>
+
+<div class="filtro-barra">
+    <select onchange="window.location.href='?genero='+this.value" class="form-select" style="max-width:260px;">
+        <option value="">Todos os gêneros</option>
+        {% for g in generos %}
+        <option value="{{ g.id }}" {% if g.id == genero_selecionado %}selected{% endif %}>{{ g.nome }}</option>
+        {% endfor %}
+    </select>
+</div>
+
+{% if filmes %}
+<div class="ranking-list">
+    {% for f in filmes %}
+    <a href="{% url 'app:detalhe_filme' f.id %}" class="ranking-item">
+        <div class="ranking-posicao">{{ forloop.counter }}</div>
+        <div class="ranking-poster">
+            {% if f.poster_url %}<img src="{{ f.poster_url }}" alt="{{ f.nome }}">{% else %}<div class="poster-placeholder"><i class="bi bi-film"></i></div>{% endif %}
+        </div>
+        <div class="ranking-info">
+            <h4>{{ f.nome }}</h4>
+            <div class="poster-date">{{ f.data_lancamento }}</div>
+        </div>
+        <div class="ranking-nota"><i class="bi bi-star-fill"></i> {{ f.nota_avaliacao }}</div>
+    </a>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">Nenhum filme encontrado para este gênero.</div>
+{% endif %}
+{% endblock %}

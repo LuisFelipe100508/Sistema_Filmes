@@ -1,0 +1,55 @@
+{% extends "app/base.html" %}
+{% block title %}{{ genero.nome }}{% endblock %}
+{% block content %}
+<h2 class="page-title"><i class="bi bi-bookmark-fill"></i> Gênero: {{ genero.nome }}</h2>
+
+{% if filmes_em_cartaz %}
+<h2 class="mt-5"><i class="bi bi-ticket-perforated"></i> Em Cartaz</h2>
+<div class="catalogo-grid">
+    {% for f in filmes_em_cartaz %}
+    <a href="{% url 'app:detalhe_filme' f.id %}" class="poster-card">
+        <div class="poster-img-wrap">
+            {% if f.poster_url %}<img src="{{ f.poster_url }}" alt="{{ f.nome }}">{% else %}<div class="poster-placeholder"><i class="bi bi-film"></i></div>{% endif %}
+            <span class="poster-badge badge-cartaz">Em cartaz</span>
+            {% if f.nota_avaliacao %}<span class="poster-rating"><i class="bi bi-star-fill"></i> {{ f.nota_avaliacao }}</span>{% endif %}
+        </div>
+        <div class="poster-info"><h4>{{ f.nome }}</h4><div class="poster-date">{{ f.data_lancamento }}</div></div>
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if filmes_em_breve %}
+<h2 class="mt-5"><i class="bi bi-calendar-event"></i> Em Breve</h2>
+<div class="catalogo-grid">
+    {% for f in filmes_em_breve %}
+    <a href="{% url 'app:detalhe_filme' f.id %}" class="poster-card">
+        <div class="poster-img-wrap">
+            {% if f.poster_url %}<img src="{{ f.poster_url }}" alt="{{ f.nome }}">{% else %}<div class="poster-placeholder"><i class="bi bi-film"></i></div>{% endif %}
+            <span class="poster-badge badge-breve">Em breve</span>
+        </div>
+        <div class="poster-info"><h4>{{ f.nome }}</h4><div class="poster-date">{{ f.data_estreia_cinema }}</div></div>
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if filmes_lancados %}
+<h2 class="mt-5"><i class="bi bi-collection-play-fill"></i> Já Lançados</h2>
+<div class="catalogo-grid">
+    {% for f in filmes_lancados %}
+    <a href="{% url 'app:detalhe_filme' f.id %}" class="poster-card">
+        <div class="poster-img-wrap">
+            {% if f.poster_url %}<img src="{{ f.poster_url }}" alt="{{ f.nome }}">{% else %}<div class="poster-placeholder"><i class="bi bi-film"></i></div>{% endif %}
+            {% if f.nota_avaliacao %}<span class="poster-rating"><i class="bi bi-star-fill"></i> {{ f.nota_avaliacao }}</span>{% endif %}
+        </div>
+        <div class="poster-info"><h4>{{ f.nome }}</h4><div class="poster-date">{{ f.data_lancamento }}</div></div>
+    </a>
+    {% endfor %}
+</div>
+{% endif %}
+
+{% if not filmes_em_cartaz and not filmes_em_breve and not filmes_lancados %}
+<div class="empty-state">Nenhum filme encontrado para este gênero ainda.</div>
+{% endif %}
+{% endblock %}

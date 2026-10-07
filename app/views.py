@@ -4,7 +4,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
 from django.shortcuts import render, redirect, get_object_or_404
 
-from .models import Filme, AvaliacaoUsuario
+from .models import Filme, Genero, AvaliacaoUsuario
 
 
 def index(request):
@@ -20,7 +20,8 @@ def index(request):
 def detalhe_filme(request, filme_id):
     filme = get_object_or_404(
         Filme.objects.prefetch_related(
-            "genero", "pais", "elenco__ator", "sessoes__cinema", "avaliacoes_usuarios__usuario"
+            "genero", "pais", "elenco__ator", "sessoes__cinema",
+            "avaliacoes_usuarios__usuario", "streamings__streaming"
         ).select_related("diretor"),
         id=filme_id,
     )
@@ -47,6 +48,42 @@ def detalhe_filme(request, filme_id):
 def lista_filmes(request):
     filmes = Filme.objects.prefetch_related("genero", "pais").select_related("diretor")
     return render(request, "app/lista_filmes.html", {"filmes": filmes})
+
+
+def generos(request):
+    lista_generos = Genero.objects.all().order_by("nome")
+    return render(request, "app/generos.html", {"generos": lista_generos})
+
+
+def filmes_por_genero(request, genero_id):
+    genero = get_object_or_404(Genero, id=genero_id)
+    filmes_em_cartaz = Filme.objects.filter(genero=genero, status_cartaz="em_cartaz").order_by("-nota_avaliacao")
+    filmes_em_breve = Filme.objects.filter(genero=genero, status_cartaz="em_breve").order_by("data_estreia_cinema")
+    filmes_lancados = Filme.objects.filter(genero=genero, status_cartaz="lancado").order_by("-nota_avaliacao")
+
+    return render(request, "app/filmes_por_genero.html", {
+        "genero": genero,
+        "filmes_em_cartaz": filmes_em_cartaz,
+        "filmes_em_breve": filmes_em_breve,
+        "filmes_lancados": filmes_lancados,
+    })
+
+
+def ranking(request):
+    genero_id = request.GET.get("genero")
+    filmes = Filme.objects.exclude(nota_avaliacao__isnull=True)
+
+    if genero_id:
+        filmes = filmes.filter(genero__id=genero_id)
+
+    filmes = filmes.order_by("-nota_avaliacao")[:30]
+    lista_generos = Genero.objects.all().order_by("nome")
+
+    return render(request, "app/ranking.html", {
+        "filmes": filmes,
+        "generos": lista_generos,
+        "genero_selecionado": int(genero_id) if genero_id else None,
+    })
 
 
 def registrar(request):
