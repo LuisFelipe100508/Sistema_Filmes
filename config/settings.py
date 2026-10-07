@@ -125,3 +125,7 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 TMDB_API_KEY = os.environ.get('TMDB_API_KEY', '')
 TMDB_LANGUAGE = 'pt-BR'
 TMDB_REGION = 'BR'
+
+LOGIN_REDIRECT_URL = 'app:index'
+LOGOUT_REDIRECT_URL = 'app:index'
+LOGIN_URL = 'app:login'

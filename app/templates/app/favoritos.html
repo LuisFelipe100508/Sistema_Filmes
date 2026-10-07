@@ -1,0 +1,35 @@
+{% extends "app/base.html" %}
+{% load static %}
+{% block title %}Meus Favoritos{% endblock %}
+{% block content %}
+<div id="paginaFavoritos">
+    <h2 class="page-title"><i class="bi bi-heart-fill"></i> Meus Favoritos</h2>
+
+{% if favoritos %}
+<div class="catalogo-grid">
+    {% for fav in favoritos %}
+    <div class="poster-card-wrap">
+        <a href="{% url 'app:detalhe_filme' fav.filme.id %}" class="poster-card">
+            <div class="poster-img-wrap">
+                {% if fav.filme.poster_url %}<img src="{{ fav.filme.poster_url }}" alt="{{ fav.filme.nome }}">{% else %}<div class="poster-placeholder"><i class="bi bi-film"></i></div>{% endif %}
+                {% if fav.filme.status_cartaz == 'em_cartaz' %}<span class="poster-badge badge-cartaz">Em cartaz</span>{% elif fav.filme.status_cartaz == 'em_breve' %}<span class="poster-badge badge-breve">Em breve</span>{% endif %}
+                {% if fav.filme.nota_avaliacao %}<span class="poster-rating"><i class="bi bi-star-fill"></i> {{ fav.filme.nota_avaliacao }}</span>{% endif %}
+            </div>
+            <div class="poster-info"><h4>{{ fav.filme.nome }}</h4><div class="poster-date">{{ fav.filme.data_lancamento }}</div></div>
+        </a>
+        <button class="favorito-btn ativo" data-filme-id="{{ fav.filme.id }}" title="Remover dos favoritos">
+            <i class="bi bi-heart-fill"></i>
+        </button>
+    </div>
+    {% endfor %}
+</div>
+{% else %}
+<div class="empty-state">
+    Você ainda não favoritou nenhum filme. Navegue pelo catálogo e clique no coração dos filmes que você gosta!
+</div>
+{% endif %}
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'app/favoritos.js' %}"></script>
+{% endblock %}

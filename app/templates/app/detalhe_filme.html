@@ -1,17 +1,28 @@
 {% extends "app/base.html" %}
+{% load static %}
 {% block title %}{{ filme.nome }}{% endblock %}
 {% block content %}
 
 <div class="filme-hero">
     {% if filme.trailer_key %}
-        <div class="filme-hero-video">
+        <div class="filme-hero-video" id="heroVideoWrap">
             <iframe
-                src="https://www.youtube.com/embed/{{ filme.trailer_key }}?autoplay=1&mute=1&loop=1&playlist={{ filme.trailer_key }}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1"
+                id="heroTrailerFrame"
+                src="https://www.youtube.com/embed/{{ filme.trailer_key }}?autoplay=1&mute=1&loop=1&playlist={{ filme.trailer_key }}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1&enablejsapi=1"
                 frameborder="0"
                 allow="autoplay; encrypted-media"
                 allowfullscreen>
             </iframe>
         </div>
+        {% if filme.galeria.all %}
+        <div class="filme-hero-slideshow" id="heroFallbackSlideshow" style="display:none;">
+            {% for img in filme.galeria.all %}
+            <div class="slideshow-slide" style="background-image: url('{{ img.url }}'); animation-delay: {{ forloop.counter0 }}s;"></div>
+            {% endfor %}
+        </div>
+        {% elif filme.backdrop_url %}
+        <div class="filme-hero-bg" id="heroFallbackBg" style="background-image: url('{{ filme.backdrop_url }}'); display:none;"></div>
+        {% endif %}
         <div class="filme-hero-overlay"></div>
     {% elif filme.galeria.all %}
         <div class="filme-hero-slideshow">
@@ -48,6 +59,12 @@
             </div>
             <p class="filme-sinopse">{{ filme.sinopse|default:"Sinopse não disponível." }}</p>
             {% if filme.diretor %}<p><strong>Diretor:</strong> {{ filme.diretor.nome }}</p>{% endif %}
+            {% if user.is_authenticated %}
+            <button class="favorito-btn-grande {% if ja_favoritou %}ativo{% endif %}" data-filme-id="{{ filme.id }}" id="favoritoDetalheBtn">
+                <i class="bi bi-heart-fill"></i>
+                <span>{% if ja_favoritou %}Nos favoritos{% else %}Adicionar aos favoritos{% endif %}</span>
+            </button>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -88,7 +105,8 @@
 </div>
 {% endif %}
 
-<!-- ONDE ASSISTIR (CINEMA) -->
+<!-- ONDE ASSISTIR (CINEMA) - só aparece para filmes em cartaz ou em breve -->
+{% if filme.status_cartaz != "lancado" %}
 <h2 class="mt-5"><i class="bi bi-geo-alt-fill"></i> Onde assistir na região</h2>
 {% if sessoes_ativas %}
 <div class="row g-3">
@@ -107,6 +125,7 @@
 {% else %}
 <div class="empty-state">Nenhuma sessão cadastrada para este filme nos cinemas da região ainda.</div>
 {% endif %}
+{% endif %}
 
 <!-- AVALIAÇÕES DA COMUNIDADE -->
 <h2 class="mt-5"><i class="bi bi-chat-square-text-fill"></i> Avaliações de quem já assistiu</h2>
@@ -117,33 +136,33 @@
     </div>
 {% elif user.is_authenticated %}
     {% if not ja_avaliou %}
-    <form method="post" action="{% url 'app:avaliar_filme' filme.id %}" class="avaliacao-form mb-4">
-        {% csrf_token %}
-        <label class="form-label">Sua nota:</label>
-        <select name="nota" class="form-select mb-2" style="max-width:200px;">
-            <option value="5">5 — Excelente</option>
-            <option value="4">4 — Muito bom</option>
-            <option value="3">3 — Bom</option>
-            <option value="2">2 — Fraco</option>
-            <option value="1">1 — Ruim</option>
-        </select>
-        <textarea name="comentario" class="form-control mb-2" rows="3" placeholder="O que você achou do filme?"></textarea>
-        <button type="submit" class="btn-cine">Publicar avaliação</button>
-    </form>
+        <form method="post" action="{% url 'app:avaliar_filme' filme.id %}" class="avaliacao-form mb-4">
+            {% csrf_token %}
+            <label class="form-label">Sua nota:</label>
+            <select name="nota" class="form-select mb-2" style="max-width:200px;">
+                <option value="5">5 — Excelente</option>
+                <option value="4">4 — Muito bom</option>
+                <option value="3">3 — Bom</option>
+                <option value="2">2 — Fraco</option>
+                <option value="1">1 — Ruim</option>
+            </select>
+            <textarea name="comentario" class="form-control mb-2" rows="3" placeholder="O que você achou do filme?"></textarea>
+            <button type="submit" class="btn-cine">Publicar avaliação</button>
+        </form>
     {% else %}
-    <p class="text-muted-cine">Você já avaliou este filme. Envie novamente pra atualizar sua nota/comentário.</p>
-    <form method="post" action="{% url 'app:avaliar_filme' filme.id %}" class="avaliacao-form mb-4">
-        {% csrf_token %}
-        <select name="nota" class="form-select mb-2" style="max-width:200px;">
-            <option value="5">5 — Excelente</option>
-            <option value="4">4 — Muito bom</option>
-            <option value="3">3 — Bom</option>
-            <option value="2">2 — Fraco</option>
-            <option value="1">1 — Ruim</option>
-        </select>
-        <textarea name="comentario" class="form-control mb-2" rows="3" placeholder="Atualize seu comentário"></textarea>
-        <button type="submit" class="btn-cine">Atualizar avaliação</button>
-    </form>
+        <p class="text-muted-cine">Você já avaliou este filme. Envie novamente pra atualizar sua nota/comentário.</p>
+        <form method="post" action="{% url 'app:avaliar_filme' filme.id %}" class="avaliacao-form mb-4">
+            {% csrf_token %}
+            <select name="nota" class="form-select mb-2" style="max-width:200px;">
+                <option value="5">5 — Excelente</option>
+                <option value="4">4 — Muito bom</option>
+                <option value="3">3 — Bom</option>
+                <option value="2">2 — Fraco</option>
+                <option value="1">1 — Ruim</option>
+            </select>
+            <textarea name="comentario" class="form-control mb-2" rows="3" placeholder="Atualize seu comentário"></textarea>
+            <button type="submit" class="btn-cine">Atualizar avaliação</button>
+        </form>
     {% endif %}
 {% else %}
     <div class="empty-state mb-4">
@@ -164,4 +183,48 @@
 <p class="text-muted-cine">Nenhuma avaliação ainda. Seja o primeiro a comentar!</p>
 {% endfor %}
 
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'app/favoritos.js' %}"></script>
+{% if filme.trailer_key %}
+<script>
+(function() {
+    var frame = document.getElementById('heroTrailerFrame');
+    var wrap = document.getElementById('heroVideoWrap');
+    var fallbackSlideshow = document.getElementById('heroFallbackSlideshow');
+    var fallbackBg = document.getElementById('heroFallbackBg');
+
+    function ativarFallback() {
+        if (wrap) wrap.style.display = 'none';
+        if (fallbackSlideshow) fallbackSlideshow.style.display = 'block';
+        if (fallbackBg) fallbackBg.style.display = 'block';
+    }
+
+    var tag = document.createElement('script');
+    tag.src = "https://www.youtube.com/iframe_api";
+    document.body.appendChild(tag);
+
+    window.onYouTubeIframeAPIReady = function() {
+        try {
+            new YT.Player('heroTrailerFrame', {
+                events: {
+                    'onError': function(e) {
+                        ativarFallback();
+                    }
+                }
+            });
+        } catch (err) {
+            ativarFallback();
+        }
+    };
+
+    setTimeout(function() {
+        if (typeof YT === 'undefined') {
+            ativarFallback();
+        }
+    }, 6000);
+})();
+</script>
+{% endif %}
 {% endblock %}

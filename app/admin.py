@@ -10,6 +10,7 @@ from .models import (
     Cinema,
     Sessao,
     AvaliacaoUsuario,
+    Favorito,
     Streaming,
     FilmeStreaming,
 )
@@ -112,6 +113,13 @@ class SessaoAdmin(admin.ModelAdmin):
 class AvaliacaoUsuarioAdmin(admin.ModelAdmin):
     list_display = ("id", "filme", "usuario", "nota", "data_criacao")
     list_filter = ("nota",)
+    search_fields = ("filme__nome", "usuario__username")
+
+
+@admin.register(Favorito)
+class FavoritoAdmin(admin.ModelAdmin):
+    list_display = ("id", "filme", "usuario", "data_adicionado")
+    list_filter = ("data_adicionado",)
     search_fields = ("filme__nome", "usuario__username")
 
 

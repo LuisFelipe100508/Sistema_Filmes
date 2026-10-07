@@ -257,6 +257,24 @@ class AvaliacaoUsuario(models.Model):
 
 
 # =========================================================
+# Favorito — lista pessoal de filmes curtidos por cada usuário
+# =========================================================
+class Favorito(models.Model):
+    filme = models.ForeignKey(Filme, on_delete=models.CASCADE, related_name="favoritado_por")
+    usuario = models.ForeignKey(User, on_delete=models.CASCADE, related_name="favoritos")
+    data_adicionado = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        verbose_name = "Favorito"
+        verbose_name_plural = "Favoritos"
+        ordering = ["-data_adicionado"]
+        unique_together = ("filme", "usuario")
+
+    def __str__(self):
+        return f"{self.usuario.username} favoritou {self.filme.nome}"
+
+
+# =========================================================
 # Onde assistir em streaming (Netflix, Prime Video, etc.)
 # =========================================================
 class Streaming(models.Model):

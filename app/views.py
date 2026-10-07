@@ -2,18 +2,49 @@ from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
+from django.db.models import Q
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 
-from .models import Filme, Genero, AvaliacaoUsuario
+from .models import Filme, Genero, AvaliacaoUsuario, Favorito
 
 
 def index(request):
     """Home dinâmica: mostra filmes em cartaz e em breve, com poster e nota."""
     em_cartaz = Filme.objects.filter(status_cartaz="em_cartaz").order_by("-nota_avaliacao")[:8]
     em_breve = Filme.objects.filter(status_cartaz="em_breve").order_by("data_estreia_cinema")[:8]
+
+    favoritos_ids = set()
+    if request.user.is_authenticated:
+        favoritos_ids = set(
+            Favorito.objects.filter(usuario=request.user).values_list("filme_id", flat=True)
+        )
+
     return render(request, "app/index.html", {
         "em_cartaz": em_cartaz,
         "em_breve": em_breve,
+        "favoritos_ids": favoritos_ids,
+    })
+
+
+def buscar(request):
+    termo = request.GET.get("q", "").strip()
+    resultados = []
+    if termo:
+        resultados = Filme.objects.filter(
+            Q(nome__icontains=termo) | Q(sinopse__icontains=termo)
+        ).distinct()[:40]
+
+    favoritos_ids = set()
+    if request.user.is_authenticated:
+        favoritos_ids = set(
+            Favorito.objects.filter(usuario=request.user).values_list("filme_id", flat=True)
+        )
+
+    return render(request, "app/buscar.html", {
+        "termo": termo,
+        "resultados": resultados,
+        "favoritos_ids": favoritos_ids,
     })
 
 
@@ -27,8 +58,10 @@ def detalhe_filme(request, filme_id):
     )
     avaliacoes = filme.avaliacoes_usuarios.all()
     ja_avaliou = False
+    ja_favoritou = False
     if request.user.is_authenticated:
         ja_avaliou = avaliacoes.filter(usuario=request.user).exists()
+        ja_favoritou = Favorito.objects.filter(usuario=request.user, filme=filme).exists()
 
     media_usuarios = None
     if avaliacoes.exists():
@@ -40,6 +73,7 @@ def detalhe_filme(request, filme_id):
         "elenco": filme.elenco.select_related("ator").all(),
         "avaliacoes": avaliacoes,
         "ja_avaliou": ja_avaliou,
+        "ja_favoritou": ja_favoritou,
         "media_usuarios": media_usuarios,
         "sessoes_ativas": [s for s in filme.sessoes.all() if s.em_cartaz_agora],
     })
@@ -47,7 +81,17 @@ def detalhe_filme(request, filme_id):
 
 def lista_filmes(request):
     filmes = Filme.objects.prefetch_related("genero", "pais").select_related("diretor")
-    return render(request, "app/lista_filmes.html", {"filmes": filmes})
+
+    favoritos_ids = set()
+    if request.user.is_authenticated:
+        favoritos_ids = set(
+            Favorito.objects.filter(usuario=request.user).values_list("filme_id", flat=True)
+        )
+
+    return render(request, "app/lista_filmes.html", {
+        "filmes": filmes,
+        "favoritos_ids": favoritos_ids,
+    })
 
 
 def generos(request):
@@ -61,11 +105,18 @@ def filmes_por_genero(request, genero_id):
     filmes_em_breve = Filme.objects.filter(genero=genero, status_cartaz="em_breve").order_by("data_estreia_cinema")
     filmes_lancados = Filme.objects.filter(genero=genero, status_cartaz="lancado").order_by("-nota_avaliacao")
 
+    favoritos_ids = set()
+    if request.user.is_authenticated:
+        favoritos_ids = set(
+            Favorito.objects.filter(usuario=request.user).values_list("filme_id", flat=True)
+        )
+
     return render(request, "app/filmes_por_genero.html", {
         "genero": genero,
         "filmes_em_cartaz": filmes_em_cartaz,
         "filmes_em_breve": filmes_em_breve,
         "filmes_lancados": filmes_lancados,
+        "favoritos_ids": favoritos_ids,
     })
 
 
@@ -84,6 +135,33 @@ def ranking(request):
         "generos": lista_generos,
         "genero_selecionado": int(genero_id) if genero_id else None,
     })
+
+
+@login_required
+def meus_favoritos(request):
+    favoritos = Favorito.objects.filter(usuario=request.user).select_related("filme")
+    return render(request, "app/favoritos.html", {"favoritos": favoritos})
+
+
+@login_required
+def favoritar_filme(request, filme_id):
+    """Alterna (toggle) o favorito: se já tiver, remove; se não tiver, adiciona."""
+    filme = get_object_or_404(Filme, id=filme_id)
+    favorito, criado = Favorito.objects.get_or_create(usuario=request.user, filme=filme)
+
+    if not criado:
+        favorito.delete()
+        favoritado = False
+    else:
+        favoritado = True
+
+    # Se a requisição veio via AJAX (fetch), responde em JSON pro coração mudar sem recarregar a página
+    if request.headers.get("x-requested-with") == "XMLHttpRequest":
+        return JsonResponse({"favoritado": favoritado})
+
+    # Fallback sem JS: volta pra página de onde veio
+    next_url = request.POST.get("next") or request.META.get("HTTP_REFERER") or "app:index"
+    return redirect(next_url)
 
 
 def registrar(request):
