@@ -1,7 +1,7 @@
 """
-Comando para buscar filmes reais do TMDB: em cartaz, em breve, e já lançados
-(populares/bem avaliados). Traz elenco com fotos, sinopse, gêneros, diretor
-e onde assistir em streaming no Brasil.
+Comando para buscar filmes reais do TMDB: em cartaz, em breve e já lançados
+(populares/bem avaliados). Traz elenco com fotos, sinopse, gêneros, diretor,
+trailer do YouTube, galeria de imagens e onde assistir em streaming no Brasil.
 
 Uso:
     python manage.py fetch_tmdb
@@ -17,7 +17,7 @@ import requests
 from django.conf import settings
 from django.core.management.base import BaseCommand, CommandError
 
-from app.models import Filme, Genero, Pais, Pessoa, FilmeAtor, Streaming, FilmeStreaming
+from app.models import Filme, Genero, Pais, Pessoa, FilmeAtor, FilmeImagem, Streaming, FilmeStreaming
 
 TMDB_BASE_URL = "https://api.themoviedb.org/3"
 POSTER_BASE_URL = "https://image.tmdb.org/t/p/w500"
@@ -278,6 +278,54 @@ class Command(BaseCommand):
                     defaults={"personagem": ator_info.get("character", "")},
                 )
 
+        # Trailer do YouTube
+        videos_resp = requests.get(
+            f"{TMDB_BASE_URL}/movie/{tmdb_id}/videos",
+            params={"api_key": api_key, "language": settings.TMDB_LANGUAGE},
+            timeout=15,
+        )
+        if videos_resp.status_code == 200:
+            videos = videos_resp.json().get("results", [])
+            trailer = next(
+                (v for v in videos if v["site"] == "YouTube" and v["type"] == "Trailer" and v.get("official")),
+                None,
+            ) or next(
+                (v for v in videos if v["site"] == "YouTube" and v["type"] == "Trailer"),
+                None,
+            )
+            if not trailer:
+                videos_resp_en = requests.get(
+                    f"{TMDB_BASE_URL}/movie/{tmdb_id}/videos",
+                    params={"api_key": api_key, "language": "en-US"},
+                    timeout=15,
+                )
+                if videos_resp_en.status_code == 200:
+                    videos_en = videos_resp_en.json().get("results", [])
+                    trailer = next(
+                        (v for v in videos_en if v["site"] == "YouTube" and v["type"] == "Trailer"),
+                        None,
+                    )
+            if trailer:
+                filme.trailer_key = trailer["key"]
+                filme.save()
+
+        # Galeria de imagens (backdrops) para slideshow de fundo
+        images_resp = requests.get(
+            f"{TMDB_BASE_URL}/movie/{tmdb_id}/images",
+            params={"api_key": api_key},
+            timeout=15,
+        )
+        if images_resp.status_code == 200:
+            backdrops = images_resp.json().get("backdrops", [])[:5]
+            FilmeImagem.objects.filter(filme=filme).delete()
+            for i, img in enumerate(backdrops):
+                FilmeImagem.objects.create(
+                    filme=filme,
+                    url=f"{BACKDROP_BASE_URL}{img['file_path']}",
+                    ordem=i,
+                )
+
+        # Onde assistir (streaming) - dados reais por região (Brasil)
         providers_resp = requests.get(
             f"{TMDB_BASE_URL}/movie/{tmdb_id}/watch/providers",
             params={"api_key": api_key},

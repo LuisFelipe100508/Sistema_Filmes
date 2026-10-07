@@ -2,7 +2,28 @@
 {% block title %}{{ filme.nome }}{% endblock %}
 {% block content %}
 
-<div class="filme-hero" {% if filme.backdrop_url %}style="background-image: linear-gradient(to bottom, rgba(18,0,20,0.4), var(--cinema-bg) 95%), url('{{ filme.backdrop_url }}');"{% endif %}>
+<div class="filme-hero">
+    {% if filme.trailer_key %}
+        <div class="filme-hero-video">
+            <iframe
+                src="https://www.youtube.com/embed/{{ filme.trailer_key }}?autoplay=1&mute=1&loop=1&playlist={{ filme.trailer_key }}&controls=0&showinfo=0&rel=0&modestbranding=1&playsinline=1"
+                frameborder="0"
+                allow="autoplay; encrypted-media"
+                allowfullscreen>
+            </iframe>
+        </div>
+        <div class="filme-hero-overlay"></div>
+    {% elif filme.galeria.all %}
+        <div class="filme-hero-slideshow">
+            {% for img in filme.galeria.all %}
+            <div class="slideshow-slide" style="background-image: url('{{ img.url }}'); animation-delay: {{ forloop.counter0 }}s;"></div>
+            {% endfor %}
+        </div>
+        <div class="filme-hero-overlay"></div>
+    {% elif filme.backdrop_url %}
+        <div class="filme-hero-bg" style="background-image: url('{{ filme.backdrop_url }}');"></div>
+        <div class="filme-hero-overlay"></div>
+    {% endif %}
     <div class="filme-hero-content">
         <div class="filme-poster-grande">
             {% if filme.poster_url %}
@@ -51,7 +72,23 @@
 </div>
 {% endif %}
 
-<!-- ONDE ASSISTIR -->
+<!-- STREAMING -->
+{% if filme.streamings.all %}
+<h2 class="mt-5"><i class="bi bi-play-circle-fill"></i> Disponível em streaming</h2>
+<div class="streaming-row">
+    {% for fs in filme.streamings.all %}
+    <div class="streaming-badge">
+        {% if fs.streaming.logo_url %}
+            <img src="{{ fs.streaming.logo_url }}" alt="{{ fs.streaming.nome }}">
+        {% endif %}
+        <span>{{ fs.streaming.nome }}</span>
+        <small>{{ fs.get_tipo_display }}</small>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<!-- ONDE ASSISTIR (CINEMA) -->
 <h2 class="mt-5"><i class="bi bi-geo-alt-fill"></i> Onde assistir na região</h2>
 {% if sessoes_ativas %}
 <div class="row g-3">
@@ -69,21 +106,6 @@
 </div>
 {% else %}
 <div class="empty-state">Nenhuma sessão cadastrada para este filme nos cinemas da região ainda.</div>
-{% endif %}
-
-{% if filme.streamings.all %}
-<h2 class="mt-5"><i class="bi bi-play-circle-fill"></i> Disponível em streaming</h2>
-<div class="streaming-row">
-    {% for fs in filme.streamings.all %}
-    <div class="streaming-badge">
-        {% if fs.streaming.logo_url %}
-            <img src="{{ fs.streaming.logo_url }}" alt="{{ fs.streaming.nome }}">
-        {% endif %}
-        <span>{{ fs.streaming.nome }}</span>
-        <small>{{ fs.get_tipo_display }}</small>
-    </div>
-    {% endfor %}
-</div>
 {% endif %}
 
 <!-- AVALIAÇÕES DA COMUNIDADE -->

@@ -21,7 +21,7 @@ def detalhe_filme(request, filme_id):
     filme = get_object_or_404(
         Filme.objects.prefetch_related(
             "genero", "pais", "elenco__ator", "sessoes__cinema",
-            "avaliacoes_usuarios__usuario", "streamings__streaming"
+            "avaliacoes_usuarios__usuario", "streamings__streaming", "galeria"
         ).select_related("diretor"),
         id=filme_id,
     )

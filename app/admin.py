@@ -6,6 +6,7 @@ from .models import (
     Pessoa,
     Filme,
     FilmeAtor,
+    FilmeImagem,
     Cinema,
     Sessao,
     AvaliacaoUsuario,
@@ -45,6 +46,11 @@ class FilmeAtorInline(admin.TabularInline):
     extra = 1
 
 
+class FilmeImagemInline(admin.TabularInline):
+    model = FilmeImagem
+    extra = 1
+
+
 class SessaoInline(admin.TabularInline):
     model = Sessao
     extra = 1
@@ -66,11 +72,12 @@ class FilmeAdmin(admin.ModelAdmin):
         "data_estreia_cinema",
         "nota_avaliacao",
         "diretor",
+        "trailer_key",
     )
     list_filter = ("status_cartaz", "genero", "pais", "data_lancamento")
     search_fields = ("nome", "sinopse")
     filter_horizontal = ("genero", "pais")
-    inlines = [FilmeAtorInline, SessaoInline, FilmeStreamingInline]
+    inlines = [FilmeAtorInline, FilmeImagemInline, SessaoInline, FilmeStreamingInline]
 
 
 @admin.register(FilmeAtor)
