@@ -1,14 +1,213 @@
 {% extends "app/base.html" %}
 {% block title %}Gêneros{% endblock %}
 {% block content %}
-<h2 class="page-title"><i class="bi bi-tags-fill"></i> Explorar por Gênero</h2>
 
-<div class="entidade-grid">
-    {% for g in generos %}
-    <a href="{% url 'app:filmes_por_genero' g.id %}" class="entidade-card" style="text-decoration:none;">
-        <h4><i class="bi bi-bookmark-fill"></i> {{ g.nome }}</h4>
-        <p class="text-muted-cine">{{ g.filmes.count }} filme{{ g.filmes.count|pluralize }}</p>
+<style>
+    @import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+
+    .generos-header {
+        display: flex; justify-content: space-between; align-items: flex-end;
+        gap: 1rem; flex-wrap: wrap; margin-bottom: 1.6rem;
+    }
+    .generos-sub { margin: 0; color: var(--cinema-text-muted); font-size: .95rem; }
+
+    .generos-busca { position: relative; min-width: 240px; }
+    .generos-busca i {
+        position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+        color: var(--cinema-text-muted);
+    }
+    .generos-busca input {
+        width: 100%; background: var(--cinema-card);
+        border: 1px solid rgba(255,255,255,0.1); color: var(--cinema-text);
+        border-radius: 999px; padding: 9px 18px 9px 40px; font-size: .9rem;
+    }
+    .generos-busca input::placeholder { color: var(--cinema-text-muted); }
+    .generos-busca input:focus { outline: none; border-color: var(--cinema-red); }
+
+    .generos-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 1.1rem;
+    }
+
+    .genero-card {
+        position: relative; display: block; height: 200px;
+        border-radius: 6px; overflow: hidden; isolation: isolate;
+        text-decoration: none; color: #fff;
+        background: #1a0a20;
+        border: 1px solid rgba(255,255,255,0.07);
+        box-shadow: 0 8px 22px rgba(0,0,0,0.35);
+        transition: transform .3s ease, box-shadow .3s ease, border-color .3s ease;
+        animation: generoEntrada .6s ease-out both;
+        animation-delay: calc(var(--i) * 45ms);
+    }
+    .genero-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 18px 38px rgba(0,0,0,0.55);
+        border-color: rgba(229,9,20,0.55);
+        text-decoration: none; color: #fff;
+    }
+
+    /* Foto com o mesmo tratamento em todos os cards, para o conjunto parecer uma coisa só */
+    .genero-bg {
+        position: absolute; inset: 0; z-index: -2;
+        background-size: cover; background-position: center;
+        filter: saturate(.8) contrast(1.05) brightness(.9);
+        transition: transform .7s ease, filter .4s ease;
+    }
+    .genero-card:hover .genero-bg { transform: scale(1.08); filter: saturate(1) contrast(1.05) brightness(.95); }
+    .genero-bg.sem-imagem { background: linear-gradient(135deg, #4a0f6e, #2a0a1a); filter: none; }
+
+    .genero-shade {
+        position: absolute; inset: 0; z-index: -1;
+        background:
+            linear-gradient(to top, rgba(10,0,15,.95) 0%, rgba(10,0,15,.55) 42%, rgba(10,0,15,.1) 100%);
+    }
+
+    .genero-corpo {
+        position: absolute; left: 18px; right: 18px; bottom: 16px; z-index: 2;
+    }
+    .genero-corpo h3 {
+        margin: 0; font-family: 'Bebas Neue', 'Poppins', sans-serif;
+        font-size: 2.15rem; font-weight: 400; letter-spacing: .05em;
+        line-height: 1; text-transform: uppercase;
+        text-shadow: 0 2px 10px rgba(0,0,0,0.6);
+    }
+    .genero-linha {
+        display: block; width: 28px; height: 3px; margin: 9px 0 8px;
+        background: var(--cinema-red); border-radius: 2px;
+        transition: width .35s ease;
+    }
+    .genero-card:hover .genero-linha { width: 70px; }
+    .genero-corpo small {
+        color: rgba(255,255,255,0.72); font-size: .78rem; letter-spacing: .04em;
+    }
+
+    .genero-seta {
+        position: absolute; top: 14px; right: 16px; z-index: 2;
+        font-size: 1.05rem; color: #fff; opacity: 0;
+        transform: translate(-6px, 6px); transition: all .3s ease;
+    }
+    .genero-card:hover .genero-seta { opacity: .9; transform: translate(0, 0); }
+
+    /* Esteira de pôsteres passando (aparece e anda ao passar o mouse) */
+    .genero-faixa {
+        position: absolute; left: 0; right: 0; top: 36px; height: 84px; z-index: 1;
+        overflow: hidden; opacity: 0; transition: opacity .35s ease;
+        -webkit-mask-image: linear-gradient(to right, transparent 0%, #000 12%, #000 88%, transparent 100%);
+        mask-image: linear-gradient(to right, transparent 0%, #000 12%, #000 88%, transparent 100%);
+    }
+    .genero-card:hover .genero-faixa { opacity: 1; }
+
+    .genero-esteira {
+        display: flex; width: max-content; height: 100%;
+        animation: passarPosters 14s linear infinite;
+        animation-play-state: paused;
+    }
+    .genero-card:hover .genero-esteira { animation-play-state: running; }
+
+    .genero-esteira img {
+        height: 100%; width: 56px; flex-shrink: 0; object-fit: cover;
+        margin-right: 8px; border-radius: 3px;
+        border: 2px solid rgba(255,255,255,0.88);
+        box-shadow: 0 6px 14px rgba(0,0,0,0.5);
+    }
+
+    /* A esteira tem os pôsteres duas vezes; andar metade dela fecha o loop sem corte */
+    @keyframes passarPosters {
+        from { transform: translateX(0); }
+        to { transform: translateX(-50%); }
+    }
+
+    @keyframes generoEntrada {
+        from { opacity: 0; transform: translateY(18px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    @media (max-width: 600px) {
+        .generos-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: .8rem; }
+        .genero-card { height: 150px; }
+        .genero-corpo { left: 12px; right: 12px; bottom: 12px; }
+        .genero-corpo h3 { font-size: 1.6rem; }
+        .genero-faixa { top: 24px; height: 62px; }
+        .genero-esteira img { width: 42px; margin-right: 6px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+        .genero-card, .genero-bg, .genero-esteira, .genero-seta, .genero-linha {
+            animation: none !important; transition: none !important;
+        }
+    }
+</style>
+
+<div class="generos-header">
+    <div>
+        <h2 class="page-title"><i class="bi bi-tags-fill"></i> Explorar por Gênero</h2>
+        <p class="generos-sub">{{ total_generos }} gêneros e {{ total_filmes }} filmes para descobrir.</p>
+    </div>
+    <div class="generos-busca">
+        <i class="bi bi-search"></i>
+        <input type="text" id="buscaGenero" placeholder="Filtrar gêneros...">
+    </div>
+</div>
+
+<div class="generos-grid" id="generosGrid">
+    {% for c in cards %}
+    <a href="{% url 'app:filmes_por_genero' c.genero.id %}"
+       class="genero-card"
+       data-nome="{{ c.genero.nome|lower }}"
+       style="--i: {{ forloop.counter0 }};">
+
+        {% if c.capa %}
+            <div class="genero-bg" style="background-image: url('{{ c.capa }}');"></div>
+        {% else %}
+            <div class="genero-bg sem-imagem"></div>
+        {% endif %}
+        <div class="genero-shade"></div>
+
+        <i class="bi bi-arrow-up-right genero-seta"></i>
+
+        {% if c.posters %}
+        <div class="genero-faixa">
+            <div class="genero-esteira">
+                {% for p in c.posters %}<img src="{{ p }}" alt="" loading="lazy">{% endfor %}
+                {% for p in c.posters %}<img src="{{ p }}" alt="" loading="lazy" aria-hidden="true">{% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="genero-corpo">
+            <h3>{{ c.genero.nome }}</h3>
+            <span class="genero-linha"></span>
+            <small>{{ c.total }} filme{{ c.total|pluralize }}</small>
+        </div>
     </a>
     {% endfor %}
 </div>
+
+<div class="empty-state" id="generosVazio" style="display:none;">
+    Nenhum gênero encontrado com esse nome.
+</div>
+
+{% endblock %}
+
+{% block extra_js %}
+<script>
+(function () {
+    var input = document.getElementById('buscaGenero');
+    var vazio = document.getElementById('generosVazio');
+    if (!input) return;
+
+    input.addEventListener('input', function () {
+        var termo = input.value.toLowerCase().trim();
+        var visiveis = 0;
+        document.querySelectorAll('.genero-card').forEach(function (card) {
+            var mostra = card.getAttribute('data-nome').indexOf(termo) !== -1;
+            card.style.display = mostra ? '' : 'none';
+            if (mostra) visiveis++;
+        });
+        vazio.style.display = visiveis === 0 ? 'block' : 'none';
+    });
+})();
+</script>
 {% endblock %}

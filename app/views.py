@@ -1,14 +1,25 @@
+import unicodedata
+
 from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
-from django.db.models import Q
+from django.db.models import Count, F, Q
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from .models import Filme, Genero, AvaliacaoUsuario, Favorito
+
+
+# Quantidade de pôsteres que passam na esteira de cada gênero
+POSTERS_POR_GENERO = 6
+
+
+def _sem_acento(texto):
+    """Usado só para ordenar os gêneros em ordem alfabética correta (Ação antes de Animação)."""
+    return unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode().lower()
 
 
 def _ids_favoritos(request):
@@ -87,8 +98,47 @@ def lista_filmes(request):
 
 
 def generos(request):
-    lista_generos = Genero.objects.all().order_by("nome")
-    return render(request, "app/generos.html", {"generos": lista_generos})
+    """
+    Página 'Explorar por Gênero'. Cada card usa o banner de um filme bem avaliado
+    do gênero, evitando repetir o mesmo banner em gêneros diferentes, e mostra
+    uma esteira de pôsteres ao passar o mouse.
+    """
+    capas_usadas = set()
+    cards = []
+
+    # Gêneros com menos filmes escolhem primeiro, para não ficarem sem opção de imagem
+    for genero in Genero.objects.annotate(total=Count("filmes")).order_by("total", "nome"):
+        melhores = list(
+            genero.filmes
+            .exclude(poster_url__isnull=True).exclude(poster_url="")
+            .order_by(F("nota_avaliacao").desc(nulls_last=True))[:30]
+        )
+
+        capa_filme = next(
+            (f for f in melhores if f.backdrop_url and f.id not in capas_usadas), None
+        ) or next((f for f in melhores if f.backdrop_url), None)
+        if capa_filme:
+            capas_usadas.add(capa_filme.id)
+
+        posters = [f.poster_url for f in melhores[:POSTERS_POR_GENERO]]
+        # Gêneros com poucos filmes: repete os pôsteres para a esteira não ficar com espaço vazio
+        if posters and len(posters) < POSTERS_POR_GENERO:
+            posters = (posters * POSTERS_POR_GENERO)[:POSTERS_POR_GENERO]
+
+        cards.append({
+            "genero": genero,
+            "total": genero.total,
+            "capa": capa_filme.backdrop_url if capa_filme else None,
+            "posters": posters,
+        })
+
+    cards.sort(key=lambda c: _sem_acento(c["genero"].nome))
+
+    return render(request, "app/generos.html", {
+        "cards": cards,
+        "total_generos": len(cards),
+        "total_filmes": Filme.objects.count(),
+    })
 
 
 def filmes_por_genero(request, genero_id):
