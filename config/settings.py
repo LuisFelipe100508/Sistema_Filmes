@@ -37,6 +37,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    # Porta de entrada: login ou visitante (precisa vir DEPOIS da sessão e da autenticação)
+    'app.middleware.LoginOuVisitanteMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -93,6 +95,12 @@ AUTH_PASSWORD_VALIDATORS = [
 ]
 
 
+# Autenticação / redirecionamentos
+LOGIN_URL = 'app:login'
+LOGIN_REDIRECT_URL = 'app:index'
+LOGOUT_REDIRECT_URL = 'app:login'
+
+
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
 
@@ -125,7 +133,3 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 TMDB_API_KEY = os.environ.get('TMDB_API_KEY', '')
 TMDB_LANGUAGE = 'pt-BR'
 TMDB_REGION = 'BR'
-
-LOGIN_REDIRECT_URL = 'app:index'
-LOGOUT_REDIRECT_URL = 'app:index'
-LOGIN_URL = 'app:login'

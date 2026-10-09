@@ -1,24 +1,45 @@
-{% extends "app/base.html" %}
-{% block title %}Criar conta{% endblock %}
+{% extends "app/auth_base.html" %}
+{% block title %}Criar conta · CineSul{% endblock %}
 {% block content %}
-<div class="auth-box">
-    <h2>Criar conta</h2>
-    <form method="post">
-        {% csrf_token %}
-        {% for field in form %}
-        <div class="mb-3">
-            <label class="form-label">{{ field.label }}</label>
-            {{ field }}
-            {% if field.errors %}
-                <div class="text-danger small mt-1">{{ field.errors|striptags }}</div>
-            {% endif %}
-            {% if field.help_text %}
-                <div class="form-text" style="color: var(--cinema-text-muted);">{{ field.help_text }}</div>
-            {% endif %}
-        </div>
-        {% endfor %}
-        <button type="submit" class="btn-cine w-100">Criar conta</button>
-    </form>
-    <p class="mt-3 text-center">Já tem conta? <a href="{% url 'app:login' %}">Entrar</a></p>
+<div class="auth-wrap">
+
+    <section class="auth-hero">
+        <div class="auth-brand"><i class="bi bi-film"></i> CineSul</div>
+        <h1>Crie sua conta e monte sua lista de favoritos.</h1>
+        <p>Com uma conta você favorita filmes, escreve avaliações e acompanha o que mais gostou.</p>
+        <ul class="auth-features">
+            <li><i class="bi bi-heart"></i> Favorite os filmes que você curte</li>
+            <li><i class="bi bi-chat-square-text"></i> Avalie e comente depois de assistir</li>
+            <li><i class="bi bi-shield-check"></i> Sua conta e seus dados só você acessa</li>
+        </ul>
+    </section>
+
+    <section class="auth-card">
+        <h2>Criar conta</h2>
+        <p class="auth-sub">Leva menos de um minuto.</p>
+
+        <form method="post">
+            {% csrf_token %}
+            {% for field in form %}
+            <div class="auth-field">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field }}
+                {% if field.errors %}
+                    <div class="auth-error">{{ field.errors|striptags }}</div>
+                {% endif %}
+                {% if field.help_text %}
+                    <div class="auth-help">{{ field.help_text|safe }}</div>
+                {% endif %}
+            </div>
+            {% endfor %}
+
+            <button type="submit" class="btn-auth-primary">
+                <i class="bi bi-person-plus"></i> Criar conta
+            </button>
+        </form>
+
+        <p class="auth-switch">Já tem conta? <a href="{% url 'app:login' %}">Entrar</a></p>
+    </section>
+
 </div>
 {% endblock %}

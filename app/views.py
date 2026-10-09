@@ -5,8 +5,19 @@ from django.contrib.auth.forms import UserCreationForm
 from django.db.models import Q
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
+from django.utils.http import url_has_allowed_host_and_scheme
+from django.views.decorators.http import require_POST
 
 from .models import Filme, Genero, AvaliacaoUsuario, Favorito
+
+
+def _ids_favoritos(request):
+    """IDs dos filmes favoritados pelo usuário logado (vazio para visitantes)."""
+    if request.user.is_authenticated:
+        return set(
+            Favorito.objects.filter(usuario=request.user).values_list("filme_id", flat=True)
+        )
+    return set()
 
 
 def index(request):
@@ -14,16 +25,10 @@ def index(request):
     em_cartaz = Filme.objects.filter(status_cartaz="em_cartaz").order_by("-nota_avaliacao")[:8]
     em_breve = Filme.objects.filter(status_cartaz="em_breve").order_by("data_estreia_cinema")[:8]
 
-    favoritos_ids = set()
-    if request.user.is_authenticated:
-        favoritos_ids = set(
-            Favorito.objects.filter(usuario=request.user).values_list("filme_id", flat=True)
-        )
-
     return render(request, "app/index.html", {
         "em_cartaz": em_cartaz,
         "em_breve": em_breve,
-        "favoritos_ids": favoritos_ids,
+        "favoritos_ids": _ids_favoritos(request),
     })
 
 
@@ -35,16 +40,10 @@ def buscar(request):
             Q(nome__icontains=termo) | Q(sinopse__icontains=termo)
         ).distinct()[:40]
 
-    favoritos_ids = set()
-    if request.user.is_authenticated:
-        favoritos_ids = set(
-            Favorito.objects.filter(usuario=request.user).values_list("filme_id", flat=True)
-        )
-
     return render(request, "app/buscar.html", {
         "termo": termo,
         "resultados": resultados,
-        "favoritos_ids": favoritos_ids,
+        "favoritos_ids": _ids_favoritos(request),
     })
 
 
@@ -81,16 +80,9 @@ def detalhe_filme(request, filme_id):
 
 def lista_filmes(request):
     filmes = Filme.objects.prefetch_related("genero", "pais").select_related("diretor")
-
-    favoritos_ids = set()
-    if request.user.is_authenticated:
-        favoritos_ids = set(
-            Favorito.objects.filter(usuario=request.user).values_list("filme_id", flat=True)
-        )
-
     return render(request, "app/lista_filmes.html", {
         "filmes": filmes,
-        "favoritos_ids": favoritos_ids,
+        "favoritos_ids": _ids_favoritos(request),
     })
 
 
@@ -105,18 +97,12 @@ def filmes_por_genero(request, genero_id):
     filmes_em_breve = Filme.objects.filter(genero=genero, status_cartaz="em_breve").order_by("data_estreia_cinema")
     filmes_lancados = Filme.objects.filter(genero=genero, status_cartaz="lancado").order_by("-nota_avaliacao")
 
-    favoritos_ids = set()
-    if request.user.is_authenticated:
-        favoritos_ids = set(
-            Favorito.objects.filter(usuario=request.user).values_list("filme_id", flat=True)
-        )
-
     return render(request, "app/filmes_por_genero.html", {
         "genero": genero,
         "filmes_em_cartaz": filmes_em_cartaz,
         "filmes_em_breve": filmes_em_breve,
         "filmes_lancados": filmes_lancados,
-        "favoritos_ids": favoritos_ids,
+        "favoritos_ids": _ids_favoritos(request),
     })
 
 
@@ -165,6 +151,9 @@ def favoritar_filme(request, filme_id):
 
 
 def registrar(request):
+    if request.user.is_authenticated:
+        return redirect("app:index")
+
     if request.method == "POST":
         form = UserCreationForm(request.POST)
         if form.is_valid():
@@ -175,6 +164,26 @@ def registrar(request):
     else:
         form = UserCreationForm()
     return render(request, "app/registrar.html", {"form": form})
+
+
+@require_POST
+def entrar_visitante(request):
+    """
+    Libera a navegação sem conta. Guarda só uma marca na sessão do servidor
+    (não cria usuário e não concede nenhuma permissão). A sessão do visitante
+    expira quando o navegador é fechado.
+    """
+    if not request.user.is_authenticated:
+        request.session["visitante"] = True
+        request.session.set_expiry(0)
+
+    # Só aceita voltar para um endereço do próprio site (evita redirecionamento malicioso)
+    destino = request.POST.get("next", "")
+    if not url_has_allowed_host_and_scheme(
+        destino, allowed_hosts={request.get_host()}, require_https=request.is_secure()
+    ):
+        destino = "app:index"
+    return redirect(destino)
 
 
 @login_required
