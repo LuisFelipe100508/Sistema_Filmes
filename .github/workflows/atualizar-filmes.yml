@@ -4,11 +4,23 @@ on:
   schedule:
     - cron: "0 9 * * *"
   workflow_dispatch:
+    inputs:
+      tipo:
+        description: "O que importar (atualizar = só em cartaz e em breve)"
+        type: choice
+        options:
+          - atualizar
+          - ambos
+          - lancados
+        default: atualizar
+      paginas_lancados:
+        description: "Páginas de filmes já lançados (20 filmes por página)"
+        default: "5"
 
 jobs:
   atualizar:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
+    timeout-minutes: 180
     steps:
       - uses: actions/checkout@v4
 
@@ -20,9 +32,11 @@ jobs:
       - name: Instalar dependências
         run: pip install -r requirements.txt
 
-      - name: Atualizar em cartaz e em breve
+      - name: Importar filmes do TMDB
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
           DEBUG: "False"
-        run: python manage.py fetch_tmdb --tipo=atualizar
+          TIPO: ${{ inputs.tipo || 'atualizar' }}
+          PAGINAS_LANCADOS: ${{ inputs.paginas_lancados || '5' }}
+        run: python manage.py fetch_tmdb --tipo="$TIPO" --paginas-lancados="$PAGINAS_LANCADOS"
