@@ -221,3 +221,4 @@ __marimo__/
 staticfiles/
 
 backup.json
+backup*.json
