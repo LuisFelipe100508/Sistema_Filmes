@@ -3,12 +3,13 @@
 {% block content %}
 <h2 class="page-title"><i class="bi bi-search"></i> Resultados para "{{ termo }}"</h2>
 
-{% if resultados %}
+{% if page_obj %}
+<p class="filtro-resumo">{{ page_obj.paginator.count }} filme{{ page_obj.paginator.count|pluralize }} encontrado{{ page_obj.paginator.count|pluralize }}</p>
 <div class="catalogo-grid">
-    {% for f in resultados %}
+    {% for f in page_obj %}
     <a href="{% url 'app:detalhe_filme' f.id %}" class="poster-card">
         <div class="poster-img-wrap">
-            {% if f.poster_url %}<img src="{{ f.poster_url }}" alt="{{ f.nome }}">{% else %}<div class="poster-placeholder"><i class="bi bi-film"></i></div>{% endif %}
+            {% if f.poster_url %}<img src="{{ f.poster_url }}" alt="{{ f.nome }}" loading="lazy" decoding="async">{% else %}<div class="poster-placeholder"><i class="bi bi-film"></i></div>{% endif %}
             {% if f.status_cartaz == 'em_cartaz' %}<span class="poster-badge badge-cartaz">Em cartaz</span>{% elif f.status_cartaz == 'em_breve' %}<span class="poster-badge badge-breve">Em breve</span>{% endif %}
             {% if f.nota_avaliacao %}<span class="poster-rating"><i class="bi bi-star-fill"></i> {{ f.nota_avaliacao }}</span>{% endif %}
         </div>
@@ -16,6 +17,7 @@
     </a>
     {% endfor %}
 </div>
+{% include "app/_paginacao.html" %}
 {% elif termo %}
 <div class="empty-state">Nenhum filme encontrado para "{{ termo }}".</div>
 {% else %}

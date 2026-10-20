@@ -3,28 +3,39 @@
 {% block content %}
 <h2 class="page-title"><i class="bi bi-camera-reels-fill"></i> Catálogo de Filmes</h2>
 
-<div class="filtro-barra">
-    <input type="text" id="buscaFilme" placeholder="Buscar filme por nome..." onkeyup="filtrarCards('buscaFilme', 'cardFilme')">
-</div>
+<form method="get" class="filtro-form">
+    <input type="search" name="q" class="campo-busca" placeholder="Buscar filme pelo nome..." value="{{ filtros.q }}">
+    <select name="genero" onchange="this.form.submit()">
+        <option value="">Todos os gêneros</option>
+        {% for g in generos %}
+        <option value="{{ g.id }}" {% if filtros.genero == g.id|stringformat:"s" %}selected{% endif %}>{{ g.nome }}</option>
+        {% endfor %}
+    </select>
+    <select name="status" onchange="this.form.submit()">
+        <option value="">Todos</option>
+        <option value="em_cartaz" {% if filtros.status == "em_cartaz" %}selected{% endif %}>Em cartaz</option>
+        <option value="em_breve" {% if filtros.status == "em_breve" %}selected{% endif %}>Em breve</option>
+        <option value="lancado" {% if filtros.status == "lancado" %}selected{% endif %}>Já lançados</option>
+    </select>
+    <select name="ordem" onchange="this.form.submit()">
+        <option value="nota" {% if filtros.ordem == "nota" %}selected{% endif %}>Melhor nota</option>
+        <option value="recentes" {% if filtros.ordem == "recentes" %}selected{% endif %}>Mais recentes</option>
+        <option value="antigos" {% if filtros.ordem == "antigos" %}selected{% endif %}>Mais antigos</option>
+        <option value="nome" {% if filtros.ordem == "nome" %}selected{% endif %}>Nome (A-Z)</option>
+    </select>
+    <button type="submit" class="btn-cine"><i class="bi bi-funnel"></i> Filtrar</button>
+</form>
 
-{% if filmes %}
+<p class="filtro-resumo">{{ total }} filme{{ total|pluralize }} encontrado{{ total|pluralize }}</p>
+
+{% if page_obj %}
 <div class="catalogo-grid">
-    {% for f in filmes %}
-    <a href="{% url 'app:detalhe_filme' f.id %}" class="poster-card cardFilme" data-nome="{{ f.nome|lower }}">
+    {% for f in page_obj %}
+    <a href="{% url 'app:detalhe_filme' f.id %}" class="poster-card">
         <div class="poster-img-wrap">
-            {% if f.poster_url %}
-                <img src="{{ f.poster_url }}" alt="{{ f.nome }}">
-            {% else %}
-                <div class="poster-placeholder"><i class="bi bi-film"></i></div>
-            {% endif %}
-            {% if f.status_cartaz == 'em_cartaz' %}
-                <span class="poster-badge badge-cartaz">Em cartaz</span>
-            {% elif f.status_cartaz == 'em_breve' %}
-                <span class="poster-badge badge-breve">Em breve</span>
-            {% endif %}
-            {% if f.nota_avaliacao %}
-            <span class="poster-rating"><i class="bi bi-star-fill"></i> {{ f.nota_avaliacao }}</span>
-            {% endif %}
+            {% if f.poster_url %}<img src="{{ f.poster_url }}" alt="{{ f.nome }}" loading="lazy" decoding="async">{% else %}<div class="poster-placeholder"><i class="bi bi-film"></i></div>{% endif %}
+            {% if f.status_cartaz == 'em_cartaz' %}<span class="poster-badge badge-cartaz">Em cartaz</span>{% elif f.status_cartaz == 'em_breve' %}<span class="poster-badge badge-breve">Em breve</span>{% endif %}
+            {% if f.nota_avaliacao %}<span class="poster-rating"><i class="bi bi-star-fill"></i> {{ f.nota_avaliacao }}</span>{% endif %}
         </div>
         <div class="poster-info">
             <h4>{{ f.nome }}</h4>
@@ -33,20 +44,8 @@
     </a>
     {% endfor %}
 </div>
+{% include "app/_paginacao.html" %}
 {% else %}
-<div class="empty-state">Nenhum filme cadastrado ainda.</div>
+<div class="empty-state">Nenhum filme encontrado com esses filtros.</div>
 {% endif %}
-
-{% endblock %}
-
-{% block extra_js %}
-<script>
-function filtrarCards(inputId, cardClass) {
-    const termo = document.getElementById(inputId).value.toLowerCase();
-    document.querySelectorAll('.' + cardClass).forEach(function(card) {
-        const nome = card.getAttribute('data-nome');
-        card.style.display = nome.includes(termo) ? '' : 'none';
-    });
-}
-</script>
 {% endblock %}

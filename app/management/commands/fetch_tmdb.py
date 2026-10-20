@@ -6,7 +6,7 @@ Uso:
     python manage.py fetch_tmdb --tipo=atualizar        (rotina diária: em cartaz + em breve)
     python manage.py fetch_tmdb --tipo=em_cartaz
     python manage.py fetch_tmdb --tipo=em_breve
-    python manage.py fetch_tmdb --tipo=lancados --paginas-lancados=10
+    python manage.py fetch_tmdb --tipo=lancados --paginas-lancados=30
     python manage.py fetch_tmdb                         (tudo: cartaz + breve + lançados)
     python manage.py fetch_tmdb --limpar --forcar       (apaga os filmes importados; cuidado!)
 """
@@ -39,6 +39,7 @@ LOGO_BASE_URL = "https://image.tmdb.org/t/p/w92"
 
 DIAS_TOLERANCIA_CARTAZ = 45
 DIAS_MAX_EM_BREVE = 365
+MAX_PAGINAS_TMDB = 500  # limite da API do TMDB por lista
 
 PROVEDORES_RELEVANTES = {
     "Netflix", "Amazon Prime Video", "Disney Plus", "HBO Max", "Max",
@@ -63,7 +64,11 @@ class Command(BaseCommand):
         )
         parser.add_argument(
             "--paginas-lancados", type=int, default=5,
-            help="Páginas de filmes já lançados (20 por página). Padrão: 5",
+            help="Páginas de filmes já lançados (20 por página, em cada lista). Padrão: 5",
+        )
+        parser.add_argument(
+            "--atualizar-existentes", action="store_true",
+            help="Rebusca também os filmes 'já lançados' que já estão no banco (mais lento)",
         )
         parser.add_argument(
             "--limpar", action="store_true",
@@ -121,7 +126,9 @@ class Command(BaseCommand):
 
         if tipo in ("lancados", "ambos"):
             self.stdout.write("Buscando filmes JÁ LANÇADOS (populares/bem avaliados) no TMDB...")
-            self._processar_lancados(api_key, options["paginas_lancados"], hoje)
+            self._processar_lancados(
+                api_key, options["paginas_lancados"], hoje, options["atualizar_existentes"]
+            )
 
         self.stdout.write(self.style.SUCCESS("\nImportação concluída!"))
 
@@ -149,6 +156,12 @@ class Command(BaseCommand):
                 time.sleep(2 * (tentativa + 1))
                 continue
             return resp
+        return None
+
+    def _json(self, url, params):
+        resp = self._get(url, params)
+        if resp is not None and resp.status_code == 200:
+            return resp.json()
         return None
 
     @staticmethod
@@ -201,8 +214,9 @@ class Command(BaseCommand):
         ))
         return vistos
 
-    def _processar_lancados(self, api_key, paginas, hoje):
-        criados = atualizados = ignorados = 0
+    def _processar_lancados(self, api_key, paginas, hoje, atualizar_existentes):
+        paginas = min(paginas, MAX_PAGINAS_TMDB)
+        criados = atualizados = ja_existiam = ignorados = 0
 
         for endpoint in ("popular", "top_rated"):
             for pagina in range(1, paginas + 1):
@@ -216,17 +230,31 @@ class Command(BaseCommand):
                     self.stderr.write(f"Erro em {endpoint}, página {pagina}.")
                     continue
 
-                for item in resp.json().get("results", []):
+                resultados = resp.json().get("results", [])
+                if not resultados:
+                    break
+
+                # Uma consulta por página para saber quais filmes já estão no banco
+                existentes = dict(
+                    Filme.objects.filter(
+                        tmdb_id__in=[item["id"] for item in resultados]
+                    ).values_list("tmdb_id", "status_cartaz")
+                )
+
+                for item in resultados:
                     data_lancamento = self._data(item)
                     if not data_lancamento or data_lancamento > hoje:
                         ignorados += 1
                         continue
 
-                    # Não rebaixa um filme que está em cartaz/em breve
-                    if Filme.objects.filter(
-                        tmdb_id=item["id"], status_cartaz__in=["em_cartaz", "em_breve"]
-                    ).exists():
+                    status_atual = existentes.get(item["id"])
+                    # Nunca rebaixa um filme que está em cartaz/em breve
+                    if status_atual in ("em_cartaz", "em_breve"):
                         ignorados += 1
+                        continue
+                    # Já importado: pula, a não ser que peçam para atualizar
+                    if status_atual and not atualizar_existentes:
+                        ja_existiam += 1
                         continue
 
                     if self._salvar_filme(item, "lancado", api_key, data_lancamento):
@@ -234,8 +262,15 @@ class Command(BaseCommand):
                     else:
                         atualizados += 1
 
+                if pagina % 5 == 0:
+                    self.stdout.write(
+                        f"    {endpoint}: página {pagina}/{paginas} "
+                        f"({criados} novos, {ja_existiam} já existiam)"
+                    )
+
         self.stdout.write(self.style.SUCCESS(
-            f"  -> lancados: {criados} criados, {atualizados} atualizados, {ignorados} ignorados"
+            f"  -> lancados: {criados} criados, {atualizados} atualizados, "
+            f"{ja_existiam} já existiam, {ignorados} ignorados"
         ))
 
     # ------------------------------------------------------------------
@@ -366,9 +401,3 @@ class Command(BaseCommand):
                     )
 
         return criado
-
-    def _json(self, url, params):
-        resp = self._get(url, params)
-        if resp is not None and resp.status_code == 200:
-            return resp.json()
-        return None

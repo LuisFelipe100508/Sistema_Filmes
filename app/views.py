@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.contrib.auth import login as auth_login
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth.forms import UserCreationForm
+from django.core.paginator import Paginator
 from django.db.models import Count, F, Q
 from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
@@ -16,10 +17,32 @@ from .models import Filme, Genero, AvaliacaoUsuario, Favorito
 # Quantidade de pôsteres que passam na esteira de cada gênero
 POSTERS_POR_GENERO = 6
 
+# Filmes por página nas listagens
+POR_PAGINA = 24
+
+STATUS_VALIDOS = {"em_cartaz", "em_breve", "lancado"}
+
+# Só os campos que os cards usam (evita carregar a sinopse de milhares de filmes)
+CAMPOS_CARD = (
+    "id", "nome", "poster_url", "nota_avaliacao",
+    "data_lancamento", "data_estreia_cinema", "status_cartaz",
+)
+
 
 def _sem_acento(texto):
     """Usado só para ordenar os gêneros em ordem alfabética correta (Ação antes de Animação)."""
     return unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode().lower()
+
+
+def _paginar(request, queryset, por_pagina=POR_PAGINA):
+    """Pagina um queryset e monta a janela de números (None = reticências)."""
+    paginator = Paginator(queryset, por_pagina)
+    page_obj = paginator.get_page(request.GET.get("page"))
+    janela = [
+        n if n != paginator.ELLIPSIS else None
+        for n in paginator.get_elided_page_range(page_obj.number, on_each_side=1, on_ends=1)
+    ]
+    return page_obj, janela
 
 
 def _ids_favoritos(request):
@@ -45,16 +68,20 @@ def index(request):
 
 def buscar(request):
     termo = request.GET.get("q", "").strip()
-    resultados = []
+    page_obj, janela = None, []
+
     if termo:
-        resultados = Filme.objects.filter(
-            Q(nome__icontains=termo) | Q(sinopse__icontains=termo)
-        ).distinct()[:40]
+        resultados = (
+            Filme.objects.filter(Q(nome__icontains=termo) | Q(sinopse__icontains=termo))
+            .only(*CAMPOS_CARD)
+            .order_by(F("nota_avaliacao").desc(nulls_last=True), "nome")
+        )
+        page_obj, janela = _paginar(request, resultados)
 
     return render(request, "app/buscar.html", {
         "termo": termo,
-        "resultados": resultados,
-        "favoritos_ids": _ids_favoritos(request),
+        "page_obj": page_obj,
+        "janela": janela,
     })
 
 
@@ -90,9 +117,37 @@ def detalhe_filme(request, filme_id):
 
 
 def lista_filmes(request):
-    filmes = Filme.objects.prefetch_related("genero", "pais").select_related("diretor")
+    """Catálogo com busca, filtros (gênero e situação), ordenação e paginação."""
+    filmes = Filme.objects.only(*CAMPOS_CARD)
+
+    q = request.GET.get("q", "").strip()
+    genero_id = request.GET.get("genero", "")
+    status = request.GET.get("status", "")
+    ordem = request.GET.get("ordem", "nota")
+
+    if q:
+        filmes = filmes.filter(nome__icontains=q)
+    if genero_id.isdigit():
+        filmes = filmes.filter(genero__id=int(genero_id))
+    if status in STATUS_VALIDOS:
+        filmes = filmes.filter(status_cartaz=status)
+
+    ordenacoes = {
+        "nota": [F("nota_avaliacao").desc(nulls_last=True), "-data_lancamento"],
+        "recentes": ["-data_lancamento", "nome"],
+        "antigos": ["data_lancamento", "nome"],
+        "nome": ["nome"],
+    }
+    filmes = filmes.order_by(*ordenacoes.get(ordem, ordenacoes["nota"]))
+
+    page_obj, janela = _paginar(request, filmes)
+
     return render(request, "app/lista_filmes.html", {
-        "filmes": filmes,
+        "page_obj": page_obj,
+        "janela": janela,
+        "total": page_obj.paginator.count,
+        "generos": Genero.objects.order_by("nome"),
+        "filtros": {"q": q, "genero": genero_id, "status": status, "ordem": ordem},
         "favoritos_ids": _ids_favoritos(request),
     })
 
@@ -111,6 +166,7 @@ def generos(request):
         melhores = list(
             genero.filmes
             .exclude(poster_url__isnull=True).exclude(poster_url="")
+            .only("id", "poster_url", "backdrop_url", "nota_avaliacao")
             .order_by(F("nota_avaliacao").desc(nulls_last=True))[:30]
         )
 
@@ -143,15 +199,24 @@ def generos(request):
 
 def filmes_por_genero(request, genero_id):
     genero = get_object_or_404(Genero, id=genero_id)
-    filmes_em_cartaz = Filme.objects.filter(genero=genero, status_cartaz="em_cartaz").order_by("-nota_avaliacao")
-    filmes_em_breve = Filme.objects.filter(genero=genero, status_cartaz="em_breve").order_by("data_estreia_cinema")
-    filmes_lancados = Filme.objects.filter(genero=genero, status_cartaz="lancado").order_by("-nota_avaliacao")
+
+    base = Filme.objects.filter(genero=genero).only(*CAMPOS_CARD)
+    filmes_em_cartaz = base.filter(status_cartaz="em_cartaz").order_by(
+        F("nota_avaliacao").desc(nulls_last=True)
+    )
+    filmes_em_breve = base.filter(status_cartaz="em_breve").order_by("data_estreia_cinema")
+    lancados = base.filter(status_cartaz="lancado").order_by(
+        F("nota_avaliacao").desc(nulls_last=True), "nome"
+    )
+
+    page_obj, janela = _paginar(request, lancados)
 
     return render(request, "app/filmes_por_genero.html", {
         "genero": genero,
         "filmes_em_cartaz": filmes_em_cartaz,
         "filmes_em_breve": filmes_em_breve,
-        "filmes_lancados": filmes_lancados,
+        "page_obj": page_obj,
+        "janela": janela,
         "favoritos_ids": _ids_favoritos(request),
     })
 
@@ -163,7 +228,9 @@ def ranking(request):
     if genero_id:
         filmes = filmes.filter(genero__id=genero_id)
 
-    filmes = filmes.order_by("-nota_avaliacao")[:30]
+    filmes = filmes.only(
+        "id", "nome", "poster_url", "nota_avaliacao", "data_lancamento"
+    ).order_by("-nota_avaliacao")[:30]
     lista_generos = Genero.objects.all().order_by("nome")
 
     return render(request, "app/ranking.html", {
