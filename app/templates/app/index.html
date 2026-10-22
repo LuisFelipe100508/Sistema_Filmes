@@ -1,67 +1,70 @@
 {% extends "app/base.html" %}
+{% block title %}CineSul{% endblock %}
 {% block content %}
 
-<div class="hero">
-    <div class="hero-badge"><i class="bi bi-film"></i> CineSul</div>
-    <h1 class="display-5">Sistema de Gerenciamento de Filmes</h1>
-    <p class="hero-subtitle">Confira o que está em cartaz, o que vem por aí, e explore todo o catálogo.</p>
-</div>
-
-<div class="section-row">
-    <h2><i class="bi bi-ticket-perforated"></i> Em Cartaz</h2>
-</div>
-
-{% if em_cartaz %}
-<div class="poster-scroll">
-    {% for f in em_cartaz %}
-    <a href="{% url 'app:detalhe_filme' f.id %}" class="poster-card">
-        <div class="poster-img-wrap">
-            {% if f.poster_url %}
-                <img src="{{ f.poster_url }}" alt="{{ f.nome }}">
-            {% else %}
-                <div class="poster-placeholder"><i class="bi bi-film"></i></div>
-            {% endif %}
-            <span class="poster-badge badge-cartaz">Em cartaz</span>
-            {% if f.nota_avaliacao %}
-            <span class="poster-rating"><i class="bi bi-star-fill"></i> {{ f.nota_avaliacao }}</span>
-            {% endif %}
+{% if destaque %}
+<section class="vitrine">
+    <div class="vitrine-fundo" style="background-image: url('{{ destaque.backdrop_url }}');"></div>
+    <div class="vitrine-sombra"></div>
+    <div class="vitrine-texto">
+        <h1 class="vitrine-titulo">{{ destaque.nome }}</h1>
+        <p class="vitrine-info">
+            {% if destaque.nota_avaliacao %}<span class="vitrine-nota"><i class="bi bi-star-fill"></i> {{ destaque.nota_avaliacao }}</span>{% endif %}
+            <span>{{ duracao_destaque }}</span>
+            <span>{% for g in destaque.genero.all|slice:":3" %}{{ g.nome }}{% if not forloop.last %}, {% endif %}{% endfor %}</span>
+        </p>
+        {% if destaque.sinopse %}<p class="vitrine-sinopse">{{ destaque.sinopse|truncatewords:34 }}</p>{% endif %}
+        <div class="vitrine-acoes">
+            <a href="{% url 'app:detalhe_filme' destaque.id %}" class="btn-cine">Ver detalhes</a>
+            <a href="{% url 'app:lista_filmes' %}?status=em_cartaz" class="btn-ghost">Tudo que está em cartaz</a>
         </div>
-        <div class="poster-info">
-            <h4>{{ f.nome }}</h4>
-            <div class="poster-date">{{ f.data_estreia_cinema|default:f.data_lancamento }}</div>
-        </div>
-    </a>
-    {% endfor %}
-</div>
+    </div>
+</section>
 {% else %}
-<div class="empty-state">Nenhum filme marcado como "Em cartaz" ainda.</div>
+<h1 class="home-titulo">Filmes em cartaz, estreias e onde assistir</h1>
+<p class="home-sub">Quando houver um filme em cartaz, ele aparece aqui em destaque.</p>
 {% endif %}
 
-<div class="section-row">
-    <h2><i class="bi bi-calendar-event"></i> Em Breve</h2>
-</div>
+<section class="prateleira">
+    <div class="prateleira-topo">
+        <h2>Em cartaz</h2>
+        <a href="{% url 'app:lista_filmes' %}?status=em_cartaz">Ver todos</a>
+    </div>
+    {% if em_cartaz %}
+    <div class="poster-scroll">
+        {% for f in em_cartaz %}{% include "app/_card_filme.html" %}{% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">Nenhum outro filme em cartaz por enquanto. A lista é atualizada todo dia de manhã.</div>
+    {% endif %}
+</section>
 
-{% if em_breve %}
-<div class="poster-scroll">
-    {% for f in em_breve %}
-    <a href="{% url 'app:detalhe_filme' f.id %}" class="poster-card">
-        <div class="poster-img-wrap">
-            {% if f.poster_url %}
-                <img src="{{ f.poster_url }}" alt="{{ f.nome }}">
-            {% else %}
-                <div class="poster-placeholder"><i class="bi bi-film"></i></div>
-            {% endif %}
-            <span class="poster-badge badge-breve">Em breve</span>
-        </div>
-        <div class="poster-info">
-            <h4>{{ f.nome }}</h4>
-            <div class="poster-date">Estreia: {{ f.data_estreia_cinema|default:"a definir" }}</div>
-        </div>
-    </a>
-    {% endfor %}
-</div>
-{% else %}
-<div class="empty-state">Nenhum filme marcado como "Em breve" ainda.</div>
-{% endif %}
+<section class="prateleira">
+    <div class="prateleira-topo">
+        <h2>Estreias que vêm aí</h2>
+        <a href="{% url 'app:lista_filmes' %}?status=em_breve">Ver todos</a>
+    </div>
+    {% if em_breve %}
+    <div class="poster-scroll">
+        {% for f in em_breve %}{% include "app/_card_filme.html" %}{% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">Nenhuma estreia anunciada por enquanto.</div>
+    {% endif %}
+</section>
+
+<section class="prateleira">
+    <div class="prateleira-topo">
+        <h2>Os mais bem avaliados</h2>
+        <a href="{% url 'app:ranking' %}">Ver ranking</a>
+    </div>
+    {% if mais_bem_avaliados %}
+    <div class="poster-scroll">
+        {% for f in mais_bem_avaliados %}{% include "app/_card_filme.html" %}{% endfor %}
+    </div>
+    {% else %}
+    <div class="empty-state">Os filmes mais bem avaliados aparecem aqui depois da primeira importação do catálogo.</div>
+    {% endif %}
+</section>
 
 {% endblock %}

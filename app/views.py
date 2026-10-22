@@ -34,6 +34,13 @@ def _sem_acento(texto):
     return unicodedata.normalize("NFKD", texto).encode("ascii", "ignore").decode().lower()
 
 
+def _duracao_texto(duracao):
+    """Converte a duração em texto curto: '2h12' ou '48 min'."""
+    minutos = int(duracao.total_seconds() // 60)
+    horas, resto = divmod(minutos, 60)
+    return f"{horas}h{resto:02d}" if horas else f"{resto} min"
+
+
 def _paginar(request, queryset, por_pagina=POR_PAGINA):
     """Pagina um queryset e monta a janela de números (None = reticências)."""
     paginator = Paginator(queryset, por_pagina)
@@ -55,14 +62,36 @@ def _ids_favoritos(request):
 
 
 def index(request):
-    """Home dinâmica: mostra filmes em cartaz e em breve, com poster e nota."""
-    em_cartaz = Filme.objects.filter(status_cartaz="em_cartaz").order_by("-nota_avaliacao")[:8]
-    em_breve = Filme.objects.filter(status_cartaz="em_breve").order_by("data_estreia_cinema")[:8]
+    """Home: um filme em destaque e prateleiras (em cartaz, em breve, mais bem avaliados)."""
+    por_nota = F("nota_avaliacao").desc(nulls_last=True)
+
+    destaque = (
+        Filme.objects.filter(status_cartaz="em_cartaz")
+        .exclude(backdrop_url__isnull=True).exclude(backdrop_url="")
+        .prefetch_related("genero")
+        .order_by(por_nota)
+        .first()
+    )
+
+    em_cartaz = Filme.objects.filter(status_cartaz="em_cartaz").only(*CAMPOS_CARD).order_by(por_nota)
+    if destaque:
+        em_cartaz = em_cartaz.exclude(id=destaque.id)
+
+    em_breve = (
+        Filme.objects.filter(status_cartaz="em_breve")
+        .only(*CAMPOS_CARD).order_by("data_estreia_cinema")[:12]
+    )
+    mais_bem_avaliados = (
+        Filme.objects.filter(status_cartaz="lancado", nota_avaliacao__isnull=False)
+        .only(*CAMPOS_CARD).order_by(por_nota)[:12]
+    )
 
     return render(request, "app/index.html", {
-        "em_cartaz": em_cartaz,
+        "destaque": destaque,
+        "duracao_destaque": _duracao_texto(destaque.duracao) if destaque else "",
+        "em_cartaz": em_cartaz[:12],
         "em_breve": em_breve,
-        "favoritos_ids": _ids_favoritos(request),
+        "mais_bem_avaliados": mais_bem_avaliados,
     })
 
 

@@ -1,28 +1,25 @@
 {% extends "app/auth_base.html" %}
-{% block title %}Entrar · CineSul{% endblock %}
+{% block title %}Entrar no CineSul{% endblock %}
 {% block content %}
 <div class="auth-wrap">
 
     <section class="auth-hero">
-        <div class="auth-brand"><i class="bi bi-film"></i> CineSul</div>
-        <h1>Descubra o que assistir, perto de você.</h1>
-        <p>Filmes em cartaz, estreias, onde assistir e o ranking dos melhores, tudo num só lugar.</p>
-        <ul class="auth-features">
-            <li><i class="bi bi-ticket-perforated"></i> Em cartaz e em breve nos cinemas</li>
-            <li><i class="bi bi-play-circle"></i> Onde assistir nos streamings</li>
-            <li><i class="bi bi-trophy"></i> Ranking por nota e por gênero</li>
-            <li><i class="bi bi-heart"></i> Sua lista pessoal de favoritos</li>
+        <div class="auth-marca"><i class="bi bi-film"></i> CineSul</div>
+        <h1>Filmes em cartaz, estreias e onde assistir.</h1>
+        <p>Um guia de cinema feito no sul de Minas, para quem gosta de escolher bem o que vai ver.</p>
+        <ul class="auth-lista">
+            <li>Veja o que está em cartaz e o que estreia em breve.</li>
+            <li>Descubra em qual streaming cada filme está.</li>
+            <li>Guarde seus favoritos e escreva o que achou.</li>
         </ul>
     </section>
 
     <section class="auth-card">
-        <h2>Bem-vindo de volta</h2>
-        <p class="auth-sub">Entre na sua conta para favoritar e avaliar filmes.</p>
+        <h2>Entrar na sua conta</h2>
+        <p class="auth-sub">Com uma conta você favorita e avalia filmes.</p>
 
         {% if form.non_field_errors %}
-        <div class="auth-alert">
-            <i class="bi bi-exclamation-circle"></i> Usuário ou senha incorretos. Tente novamente.
-        </div>
+        <div class="auth-alert">Usuário ou senha incorretos. Confira os dados e tente de novo.</div>
         {% endif %}
 
         <form method="post">
@@ -39,9 +36,7 @@
                 {{ form.password }}
             </div>
 
-            <button type="submit" class="btn-auth-primary">
-                <i class="bi bi-box-arrow-in-right"></i> Entrar
-            </button>
+            <button type="submit" class="btn-cine btn-bloco">Entrar</button>
         </form>
 
         <div class="auth-divider">ou</div>
@@ -49,11 +44,9 @@
         <form method="post" action="{% url 'app:entrar_visitante' %}">
             {% csrf_token %}
             <input type="hidden" name="next" value="{{ next }}">
-            <button type="submit" class="btn-auth-ghost">
-                <i class="bi bi-person"></i> Entrar como visitante
-            </button>
+            <button type="submit" class="btn-ghost btn-bloco">Entrar como visitante</button>
         </form>
-        <p class="auth-note">Como visitante você explora o catálogo, mas não pode favoritar nem avaliar filmes.</p>
+        <p class="auth-note">Como visitante você explora o catálogo, mas não favorita nem avalia filmes.</p>
 
         <p class="auth-switch">Ainda não tem conta? <a href="{% url 'app:registrar' %}">Criar conta</a></p>
     </section>

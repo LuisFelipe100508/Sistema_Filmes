@@ -1,16 +1,15 @@
 {% extends "app/auth_base.html" %}
-{% block title %}Criar conta · CineSul{% endblock %}
+{% block title %}Criar conta no CineSul{% endblock %}
 {% block content %}
 <div class="auth-wrap">
 
     <section class="auth-hero">
-        <div class="auth-brand"><i class="bi bi-film"></i> CineSul</div>
+        <div class="auth-marca"><i class="bi bi-film"></i> CineSul</div>
         <h1>Crie sua conta e monte sua lista de favoritos.</h1>
-        <p>Com uma conta você favorita filmes, escreve avaliações e acompanha o que mais gostou.</p>
-        <ul class="auth-features">
-            <li><i class="bi bi-heart"></i> Favorite os filmes que você curte</li>
-            <li><i class="bi bi-chat-square-text"></i> Avalie e comente depois de assistir</li>
-            <li><i class="bi bi-shield-check"></i> Sua conta e seus dados só você acessa</li>
+        <p>É rápido, e só você vê a sua lista.</p>
+        <ul class="auth-lista">
+            <li>Favorite os filmes que você quer ver.</li>
+            <li>Dê nota e escreva o que achou depois de assistir.</li>
         </ul>
     </section>
 
@@ -33,9 +32,7 @@
             </div>
             {% endfor %}
 
-            <button type="submit" class="btn-auth-primary">
-                <i class="bi bi-person-plus"></i> Criar conta
-            </button>
+            <button type="submit" class="btn-cine btn-bloco">Criar conta</button>
         </form>
 
         <p class="auth-switch">Já tem conta? <a href="{% url 'app:login' %}">Entrar</a></p>
